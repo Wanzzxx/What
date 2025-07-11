@@ -1,1 +1,329 @@
-loadstring(game:HttpGet("\104\116\116\112\115\58\47\47\114\97\119\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\87\97\110\122\122\120\120\47\83\99\114\105\112\116\86\50\47\114\101\102\115\47\104\101\97\100\115\47\109\97\105\110\47\77\97\105\110\72\117\98"))()
+if game.PlaceId ~= 72829404259339 then return end
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+--// Window & Tabs
+local Window = Fluent:CreateWindow({
+    Title = "Wanz HUB",
+    SubTitle = "Private Versions",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Menu", Icon = "" }),
+    Settings = Window:AddTab({ Title = "Pengaturan", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+local votingActive = { Next = false, Retry = false }
+
+--------------------------------------------------------------------
+-- 1. TOGGLES
+--------------------------------------------------------------------
+
+-- Auto Rejoin When Ping Freeze (NEW IMPLEMENTATION)
+Options.PingFreezeRejoin = Tabs.Main:AddToggle("PingFreezeRejoin", {
+    Title = "Auto Rejoin When Ping Freeze/Stuck",
+    Default = false
+})
+
+do
+    local heartbeatConnection = nil
+
+    Options.PingFreezeRejoin:OnChanged(function(enabled)
+        if enabled then
+            Fluent:Notify({
+                Title = "Auto Rejoin",
+                Content = "Enabled: Rejoining if ping freezes for 20 seconds",
+                Duration = 4
+            })
+
+            local Players = game:GetService("Players")
+            local TeleportService = game:GetService("TeleportService")
+            local RunService = game:GetService("RunService")
+            local LocalPlayer = Players.LocalPlayer
+            local lastPing = 0
+            local lastChangeTime = tick()
+            local PING_FREEZE_LIMIT = 20
+
+            heartbeatConnection = RunService.Heartbeat:Connect(function()
+                local success, currentPing = pcall(function()
+                    return stats().Network.ServerStatsItem["Data Ping"]:GetValue()
+                end)
+
+                if not success then return end
+
+                if currentPing ~= lastPing then
+                    lastPing = currentPing
+                    lastChangeTime = tick()
+                elseif tick() - lastChangeTime >= PING_FREEZE_LIMIT then
+                    Fluent:Notify({
+                        Title = "Auto Rejoin",
+                        Content = "Ping frozen! Rejoining...",
+                        Duration = 4
+                    })
+                    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+                end
+            end)
+        else
+            Fluent:Notify({
+                Title = "Auto Rejoin",
+                Content = "Disabled",
+                Duration = 3
+            })
+
+            if heartbeatConnection then
+                heartbeatConnection:Disconnect()
+                heartbeatConnection = nil
+            end
+        end
+    end)
+end
+
+-- Auto Join Summer Event
+Options.AutoJoinSummer = Tabs.Main:AddToggle("AutoJoinSummer", {
+    Title = "Auto Join Summer Event",
+    Default = false
+})
+
+Options.AutoJoinSummer:OnChanged(function(enabled)
+    if enabled then
+        Fluent:Notify({
+            Title = "Summer Event",
+            Content = "Waiting for Lobby...",
+            Duration = 4
+        })
+
+        task.spawn(function()
+            local RS = game:GetService("ReplicatedStorage")
+            while Options.AutoJoinSummer.Value and not Fluent.Unloaded do
+                if workspace:FindFirstChild("Lobby") then
+                    local success, err = pcall(function()
+                        local args = { [1] = "Summer-Event" }
+                        RS:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event"):FireServer(unpack(args))
+                        Fluent:Notify({
+                            Title = "Summer Event",
+                            Content = "Joined Summer Event!",
+                            Duration = 4
+                        })
+                    end)
+
+                    if success then break end
+                end
+                task.wait(2)
+            end
+        end)
+    else
+        Fluent:Notify({ Title = "Summer Event", Content = "Auto join disabled", Duration = 3 })
+    end
+end)
+
+-- Stats UI
+Options.StatsUI = Tabs.Main:AddToggle("StatsUI", { Title = "Status Checker", Default = false })
+Options.StatsUI:OnChanged(function(v)
+    if v then
+        createStatsUI()
+        Fluent:Notify({ Title = "Stats UI", Content = "UI shown", Duration = 3 })
+    else
+        local pg = game:GetService("Players").LocalPlayer.PlayerGui
+        if pg:FindFirstChild("PlayerStatsGUI") then
+            pg.PlayerStatsGUI:Destroy()
+            Fluent:Notify({ Title = "Stats UI", Content = "UI closed", Duration = 3 })
+        end
+    end
+end)
+
+-- Vote Toggles
+Options.VoteNext = Tabs.Main:AddToggle("VoteNext", { Title = "Vote Next", Default = false })
+Options.VoteNext:OnChanged(function(v)
+    votingActive.Next = v
+    if v then
+        Fluent:Notify({ Title = "Vote", Content = "Voted for Next Map", Duration = 3 })
+        task.spawn(function()
+            while votingActive.Next do
+                game:GetService("ReplicatedStorage").Remote.Server.OnGame.Voting.VoteNext:FireServer()
+                task.wait(1)
+            end
+        end)
+        Options.VoteRetry:SetValue(false)
+    end
+end)
+
+Options.VoteRetry = Tabs.Main:AddToggle("VoteRetry", { Title = "Vote Retry", Default = false })
+Options.VoteRetry:OnChanged(function(v)
+    votingActive.Retry = v
+    if v then
+        Fluent:Notify({ Title = "Vote", Content = "Voted to Retry Map", Duration = 3 })
+        task.spawn(function()
+            while votingActive.Retry do
+                game:GetService("ReplicatedStorage").Remote.Server.OnGame.Voting.VoteRetry:FireServer()
+                task.wait(1)
+            end
+        end)
+        Options.VoteNext:SetValue(false)
+    end
+end)
+
+--------------------------------------------------------------------
+-- 2. STATS UI Function
+--------------------------------------------------------------------
+function createStatsUI()
+    local RS, Plrs = game:GetService("ReplicatedStorage"), game:GetService("Players")
+    local player, RunService = Plrs.LocalPlayer, game:GetService("RunService")
+
+    local function waitForData()
+        while not RS:FindFirstChild("Player_Data") do task.wait(1) end
+        for _ = 1,10 do
+            local d = RS.Player_Data:FindFirstChild(player.Name)
+            if d then return d end
+            task.wait(1)
+        end
+    end
+
+    local gui = Instance.new("ScreenGui", player.PlayerGui)
+    gui.Name = "PlayerStatsGUI"
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0,220,0,150)
+    frame.Position = UDim2.new(0.5,-110,0.1,0)
+    frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    frame.Active, frame.Draggable = true,true
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,8)
+
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1,0,0,30)
+    title.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    title.TextColor3 = Color3.new(1,1,1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+    title.Text = player.Name.."'s Stats"
+    Instance.new("UICorner", title).CornerRadius = UDim.new(0,8)
+
+    local lbls = {
+        beach = Instance.new("TextLabel"),
+        reroll = Instance.new("TextLabel"),
+        key = Instance.new("TextLabel"),
+        play = Instance.new("TextLabel")
+    }
+    local y=35
+    for _,l in pairs(lbls) do
+        l.Parent = frame
+        l.Size = UDim2.new(1,-20,0,25)
+        l.Position = UDim2.new(0,10,0,y)
+        l.BackgroundTransparency = 1
+        l.TextXAlignment = Enum.TextXAlignment.Left
+        l.Font = Enum.Font.Gotham
+        l.TextSize = 16
+        l.TextColor3 = Color3.new(1,1,1)
+        y += 25
+    end
+    lbls.beach.Text = "Beach Balls: Loading..."
+    lbls.reroll.Text = "Trait Rerolls: Loading..."
+    lbls.key.Text = "Stat Keys: Loading..."
+    lbls.play.Text = "Play Time: 00:00:00"
+
+    local data = waitForData()
+    if data then
+        local function link(item,parent,label,prefix)
+            local itm = data[parent]:FindFirstChild(item) or data[parent]:FindFirstChild(item:gsub(" ",""))
+            if itm and itm:FindFirstChild("Amount") then
+                local function upd() label.Text = prefix .. itm.Amount.Value end
+                itm.Amount.Changed:Connect(upd); upd()
+            else label.Text = prefix.."0 (Not Found)" end
+        end
+        link("Trait Reroll","Items",lbls.reroll,"Trait Rerolls: ")
+        link("Stats Key", "Items", lbls.key, "Stat Keys: ")
+        local beach = data.Data:FindFirstChild("Beach Balls") or data.Data:FindFirstChild("BeachBalls")
+        if beach then
+            beach.Changed:Connect(function() lbls.beach.Text = "Beach Balls: " .. beach.Value end)
+            lbls.beach.Text = "Beach Balls: " .. beach.Value
+        else lbls.beach.Text = "Beach Balls: 0 (Not Found)" end
+    end
+
+    local start = os.time()
+    local hb = RunService.Heartbeat:Connect(function()
+        local t = os.time() - start
+        lbls.play.Text = string.format("Play Time: %02d:%02d:%02d", t//3600, (t%3600)//60, t%60)
+    end)
+    player.AncestryChanged:Connect(function(_,p) if not p then hb:Disconnect() end end)
+end
+
+--------------------------------------------------------------------
+-- 3. Game-End Reward Notifier
+--------------------------------------------------------------------
+local function getPlayerItemAmount(name)
+    local p = game:GetService("Players").LocalPlayer
+    local d = game:GetService("ReplicatedStorage").Player_Data:FindFirstChild(p.Name)
+    if d and d:FindFirstChild("Items") then
+        local i = d.Items:FindFirstChild(name)
+        if i and i:FindFirstChild("Amount") then return i.Amount.Value end
+    end
+    return 0
+end
+
+local lastNotify = 0
+local function showGameResults()
+    if os.time() - lastNotify < 4 then return end
+    task.spawn(function()
+        task.wait(2)
+        local p = game:GetService("Players").LocalPlayer
+        local rw = p:FindFirstChild("RewardsShow")
+        if not rw then return end
+        local kids = rw:GetChildren()
+        if #kids == 0 then
+            Fluent:Notify({Title="Game Finished", Content="No rewards detected", Duration=3})
+            lastNotify = os.time()
+            return
+        end
+        local lines = {"Game Finished", "You got:"}
+        for _,it in ipairs(kids) do
+            local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, it.Name, getPlayerItemAmount(it.Name)))
+        end
+        Fluent:Notify({Title="Game Results", Content=table.concat(lines, "\n"), Duration=6})
+        lastNotify = os.time()
+    end)
+end
+
+task.spawn(function()
+    local Plr = game:GetService("Players").LocalPlayer
+    while task.wait(0.5) do
+        local pg = Plr.PlayerGui
+        if pg:FindFirstChild("GameEndedAnimationUI") then
+            showGameResults()
+            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
+        end
+    end
+end)
+
+--------------------------------------------------------------------
+-- 4. AUTO‑CLEANUP
+--------------------------------------------------------------------
+task.spawn(function()
+    local Plr = game:GetService("Players").LocalPlayer
+    while task.wait(1) do
+        local pg = Plr:FindFirstChild("PlayerGui")
+        if pg and pg:FindFirstChild("GameEndedAnimationUI") then pg.GameEndedAnimationUI:Destroy() end
+        local s = Plr:FindFirstChild("Summon_Amount") if s then s:Destroy() end
+    end
+end)
+
+--------------------------------------------------------------------
+-- 5. SAVE‑MANAGER
+--------------------------------------------------------------------
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+Fluent:Notify({ Title = "Fluent", Content = "The script has been loaded.", Duration = 8 })
+SaveManager:LoadAutoloadConfig()
