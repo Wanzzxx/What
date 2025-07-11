@@ -145,6 +145,44 @@ do
     end)
 end
 
+Options.AntiAFK = Tabs.Main:AddToggle("AntiAFK", {
+    Title = "Anti AFK",
+    Default = false
+})
+
+do
+    local antiAfkThread
+
+    Options.AntiAFK:OnChanged(function(enabled)
+        if enabled then
+            Fluent:Notify({
+                Title = "Anti AFK",
+                Content = "Enabled: Will jump every 5 minutes",
+                Duration = 4
+            })
+
+            antiAfkThread = task.spawn(function()
+                local Players = game:GetService("Players")
+                local player = Players.LocalPlayer
+
+                while Options.AntiAFK.Value and task.wait(300) do
+                    local character = player.Character or player.CharacterAdded:Wait()
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Parent then
+                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                    end
+                end
+            end)
+        else
+            Fluent:Notify({
+                Title = "Anti AFK",
+                Content = "Disabled",
+                Duration = 3
+            })
+        end
+    end)
+end
+
 -- Auto Join Summer Event
 Options.AutoJoinSummer = Tabs.Main:AddToggle("AutoJoinSummer", {
     Title = "Auto Join Summer Event",
