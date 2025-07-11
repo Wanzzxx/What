@@ -14,6 +14,66 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- Logo Button (mobile + PC compatible toggle for Fluent UI)
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+local logoGui = Instance.new("ScreenGui")
+logoGui.Name = "FluentLogoToggle"
+logoGui.ResetOnSpawn = false
+logoGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+logoGui.Parent = player:WaitForChild("PlayerGui")
+
+local logoButton = Instance.new("ImageButton")
+logoButton.Name = "LogoButton"
+logoButton.Size = UDim2.new(0, 50, 0, 50)
+logoButton.Position = UDim2.new(0, 10, 0, 10)
+logoButton.BackgroundTransparency = 1
+logoButton.Image = "rbxassetid://94849748543315"
+logoButton.Parent = logoGui
+
+-- Optional: Make the logo draggable
+local dragging = false
+local offset = Vector2.zero
+
+logoButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        offset = Vector2.new(input.Position.X, input.Position.Y) - Vector2.new(logoButton.AbsolutePosition.X, logoButton.AbsolutePosition.Y)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local newPosition = UDim2.new(0, input.Position.X - offset.X, 0, input.Position.Y - offset.Y)
+        logoButton.Position = newPosition
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- Toggle Fluent UI
+local isMinimized = false
+local function toggleFluent()
+    isMinimized = not isMinimized
+    Window:Minimize(isMinimized)
+end
+
+-- Click or tap = toggle
+logoButton.Activated:Connect(toggleFluent)
+
+-- Left Control also toggles
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.LeftControl then
+        toggleFluent()
+    end
+end)
+
 local Tabs = {
     Main = Window:AddTab({ Title = "Menu", Icon = "" }),
     Settings = Window:AddTab({ Title = "Pengaturan", Icon = "settings" })
