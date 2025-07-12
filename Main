@@ -175,47 +175,42 @@ Options.AutoJoinChallenge:OnChanged(function(enabled)
 
     Fluent:Notify({
         Title = "Auto Join Challenge",
-        Content = "Creating Challenge Room...",
+        Content = "Opening GUI & Starting...",
         Duration = 3
     })
 
-    local RS = game:GetService("ReplicatedStorage")
-    local PlayRoomEvent = RS.Remote.Server.PlayRoom.Event
-
     task.spawn(function()
-        -- Fire the CreateChallengeRoom request
-        local createArgs = {
+        local plr = game:GetService("Players").LocalPlayer
+        local RS = game:GetService("ReplicatedStorage")
+        local PlayRoomEvent = RS.Remote.Server.PlayRoom.Event
+
+        -- Step 1: Enable the GUI
+        local gui = plr:FindFirstChild("PlayerGui"):FindFirstChild("PlayRoom")
+        if gui then
+            gui.Enabled = true
+        end
+
+        -- Step 2: Wait 2 seconds
+        task.wait(2)
+
+        -- Step 3: Create Challenge Room
+        PlayRoomEvent:FireServer({
             [1] = "Create",
             [2] = {
                 ["CreateChallengeRoom"] = true
             }
-        }
-        PlayRoomEvent:FireServer(unpack(createArgs))
+        })
 
-        -- Wait 3 seconds to give time for the room to create
-        task.wait(3)
+        -- Step 4: Wait briefly and start
+        task.wait(0.5)
 
-        -- Check if a challenge room exists
-        local rooms = workspace:FindFirstChild("Rooms")
-        if rooms then
-            for _, room in ipairs(rooms:GetChildren()) do
-                if room:FindFirstChild("ChallengeRoom") then
-                    -- Challenge room exists; start it
-                    PlayRoomEvent:FireServer({[1] = "Start"})
-
-                    Fluent:Notify({
-                        Title = "Auto Join Challenge",
-                        Content = "Challenge Room started!",
-                        Duration = 4
-                    })
-                    return
-                end
-            end
-        end
+        PlayRoomEvent:FireServer({
+            [1] = "Start"
+        })
 
         Fluent:Notify({
             Title = "Auto Join Challenge",
-            Content = "Failed to find Challenge Room after creation.",
+            Content = "Challenge Started!",
             Duration = 4
         })
     end)
