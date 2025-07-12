@@ -3,7 +3,7 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
---// Window & Tabs
+-- Windows
 local Window = Fluent:CreateWindow({
     Title = "Wanz HUB",
     SubTitle = "Private Versions",
@@ -14,7 +14,7 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- Logo Button (mobile + PC compatible toggle for Fluent UI)
+-- Logo
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
@@ -33,7 +33,6 @@ logoButton.BackgroundTransparency = 1
 logoButton.Image = "rbxassetid://98905775020119"
 logoButton.Parent = logoGui
 
--- Toggle Fluent UI when clicked or tapped
 local isMinimized = false
 local function toggleFluent()
     isMinimized = not isMinimized
@@ -42,7 +41,6 @@ end
 
 logoButton.Activated:Connect(toggleFluent)
 
--- Left Control toggles Fluent UI
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.LeftControl then
         toggleFluent()
@@ -62,11 +60,8 @@ local Options = Fluent.Options
 local votingActive = { Next = false, Retry = false }
 local buyActive = false
 
---------------------------------------------------------------------
--- 1. TOGGLES
---------------------------------------------------------------------
+-- Toggle
 
--- Auto Rejoin When Ping Freeze (NEW IMPLEMENTATION)
 Options.PingFreezeRejoin = Tabs.Misc:AddToggle("PingFreezeRejoin", {
     Title = "Auto Rejoin When Ping Freeze/Stuck",
     Default = false
@@ -316,7 +311,6 @@ Options.AutoBuyToggle:OnChanged(function(enabled)
     end
 end)
 
--- List of Raid Shop items
 local RaidShopItems = {
     "Trait Reroll",
     "Stats Key",
@@ -336,12 +330,10 @@ local RaidDropdown = Tabs.Shop:AddDropdown("RaidShopItems", {
 
 local selectedRaidItems = {}
 
--- Listen for dropdown changes
 RaidDropdown:OnChanged(function(Value)
     selectedRaidItems = Value -- Store selected items
 end)
 
--- Toggle to activate/deactivate auto-buy
 Options.AutoBuyRaidShop = Tabs.Shop:AddToggle("AutoBuyRaidShop", {
     Title = "Buy Items",
     Default = false,
@@ -435,7 +427,6 @@ Options.SimpleAntiLag:OnChanged(function(state)
         Duration = 4
     })
 
-    -- Desired settings
     local targetSettings = {
         ["Abilities VFX"] = false,
         ["Hide Cosmetic"] = true,
@@ -516,10 +507,7 @@ Options.AutoStart:OnChanged(function(state)
     end)
 end)
 
-
---------------------------------------------------------------------
--- 2. STATS UI Function
---------------------------------------------------------------------
+-- Stats ui
 function createStatsUI()
     local RS, Plrs = game:GetService("ReplicatedStorage"), game:GetService("Players")
     local player, RunService = Plrs.LocalPlayer, game:GetService("RunService")
@@ -598,3 +586,96 @@ function createStatsUI()
         lbls.play.Text = string.format("Play Time: %02d:%02d:%02d", t//3600, (t%3600)//60, t%60)
     end)
     player.AncestryChanged:Connect(function(_,p) if not p then hb:Disconnect() end end)
+end
+
+-- Reward Notifier
+local function getPlayerItemAmount(name)
+    local p = game:GetService("Players").LocalPlayer
+    local d = game:GetService("ReplicatedStorage").Player_Data:FindFirstChild(p.Name)
+    if d and d:FindFirstChild("Items") then
+        local i = d.Items:FindFirstChild(name)
+        if i and i:FindFirstChild("Amount") then return i.Amount.Value end
+    end
+    return 0
+end
+
+local lastNotify = 0
+local function showGameResults()
+    if os.time() - lastNotify < 4 then return end
+    task.spawn(function()
+        task.wait(2)
+        local p = game:GetService("Players").LocalPlayer
+        local rw = p:FindFirstChild("RewardsShow")
+        if not rw then return end
+        local kids = rw:GetChildren()
+        if #kids == 0 then
+            Fluent:Notify({Title="Game Ended", Content="No rewards detected", Duration=3})
+            lastNotify = os.time()
+            return
+        end
+        local lines = {"Game Ended", "REWARDS:"}
+        for _,it in ipairs(kids) do
+            local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, it.Name, getPlayerItemAmount(it.Name)))
+        end
+        Fluent:Notify({Title="Game Results", Content=table.concat(lines, "\n"), Duration=6})
+        lastNotify = os.time()
+    end)
+end
+
+task.spawn(function()
+    local Plr = game:GetService("Players").LocalPlayer
+    while task.wait(0.5) do
+        local pg = Plr.PlayerGui
+        if pg:FindFirstChild("GameEndedAnimationUI") then
+            showGameResults()
+            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
+        end
+    end
+end)
+
+-- Function
+task.spawn(function()
+    local Plr = game:GetService("Players").LocalPlayer
+    while true do
+        task.wait(1)
+
+        -- Run in-game only
+        if (Options.VoteNext.Value or Options.VoteRetry.Value)
+            and not workspace:FindFirstChild("Lobby") then
+
+            local pg = Plr:FindFirstChild("PlayerGui")
+            if pg and pg:FindFirstChild("GameEndedAnimationUI") then
+                pg.GameEndedAnimationUI:Destroy()
+            end
+
+            local summon = Plr:FindFirstChild("Summon_Amount")
+            if summon then summon:Destroy() end
+        end
+    end
+end)
+
+-- Save
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+task.spawn(function()
+    local VirtualUser = game:GetService("VirtualUser")
+    local player = game:GetService("Players").LocalPlayer
+
+    player.Idled:Connect(function()
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end)
+end)
+
+Window:SelectTab(1)
+Fluent:Notify({ Title = "Fluent", Content = "The script has been loaded.", Duration = 8 })
+SaveManager:LoadAutoloadConfig()
