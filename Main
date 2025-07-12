@@ -159,61 +159,65 @@ Options.AutoJoinSummer:OnChanged(function(enabled)
 end)
 
 Options.AutoJoinChallenge = Tabs.Joiner:AddToggle("AutoJoinChallenge", {
-    Title   = "Auto Join Challenge",
+    Title = "Auto Join Challenge",
     Default = false,
 })
 
 Options.AutoJoinChallenge:OnChanged(function(enabled)
     if not enabled then
         Fluent:Notify({
-            Title   = "Auto Join Challenge",
+            Title = "Auto Join Challenge",
             Content = "Disabled",
             Duration = 3
         })
         return
     end
 
-    -- Check for Lobby first
     if not workspace:FindFirstChild("Lobby") then
         Fluent:Notify({
-            Title   = "Auto Join Challenge",
-            Content = "No Lobby found — nothing to do.",
+            Title = "Auto Join Challenge",
+            Content = "No Lobby detected. Waiting skipped.",
             Duration = 4
         })
         return
     end
 
     Fluent:Notify({
-        Title   = "Auto Join Challenge",
-        Content = "Lobby found! Creating & starting challenge…",
+        Title = "Auto Join Challenge",
+        Content = "Creating challenge room...",
         Duration = 4
     })
 
     task.spawn(function()
-        local plr  = game:GetService("Players").LocalPlayer
-        local RS   = game:GetService("ReplicatedStorage")
-        local Play = RS.Remote.Server.PlayRoom.Event
+        local RS = game:GetService("ReplicatedStorage")
+        local plr = game:GetService("Players").LocalPlayer
 
-        -- enable PlayRoom GUI
-        local gui = plr.PlayerGui:FindFirstChild("PlayRoom")
-        if gui then gui.Enabled = true end
+        -- 1. Force PlayRoom GUI on
+        local playGui = plr:FindFirstChild("PlayerGui"):FindFirstChild("PlayRoom")
+        if playGui then
+            playGui.Enabled = true
+        end
 
-        task.wait(2) -- wait 2 s
+        task.wait(5)
 
-        -- create the challenge room
-        Play:FireServer({
+        -- 2. Fire Create Challenge Room remote
+        RS.Remote.Server.PlayRoom.Event:FireServer({
             [1] = "Create",
-            [2] = { CreateChallengeRoom = true }
+            [2] = {
+                ["CreateChallengeRoom"] = true
+            }
         })
 
-        task.wait(0.5) -- brief delay
+        task.wait(1)
 
-        -- start the room
-        Play:FireServer({ [1] = "Start" })
+        -- 3. Start Challenge
+        RS.Remote.Server.PlayRoom.Event:FireServer({
+            [1] = "Start"
+        })
 
         Fluent:Notify({
-            Title   = "Auto Join Challenge",
-            Content = "Challenge started!",
+            Title = "Auto Join Challenge",
+            Content = "Challenge Room Started!",
             Duration = 4
         })
     end)
