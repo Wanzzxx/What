@@ -160,62 +160,45 @@ end)
 
 Options.AutoJoinChallenge = Tabs.Joiner:AddToggle("AutoJoinChallenge", {
     Title = "Auto Join Challenge",
-    Default = false,
+    Default = false
 })
 
 Options.AutoJoinChallenge:OnChanged(function(enabled)
-    if not enabled then
-        Fluent:Notify({
-            Title = "Auto Join Challenge",
-            Content = "Disabled",
-            Duration = 3
-        })
-        return
-    end
+    if not enabled then return end
 
     task.spawn(function()
-        -- Wait until Lobby appears
-        while not workspace:FindFirstChild("Lobby") and Options.AutoJoinChallenge.Value do
-            task.wait(1)
+        while Options.AutoJoinChallenge.Value and not Fluent.Unloaded do
+            if workspace:FindFirstChild("Lobby") then
+                -- Enable the GUI
+                local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+                local playRoomGui = playerGui:FindFirstChild("PlayRoom")
+                if playRoomGui then
+                    playRoomGui.Enabled = true
+                end
+
+                -- Function to create and start the room
+                local function manageRoom()
+                    local createArgs = {
+                        [1] = "Create",
+                        [2] = {
+                            ["CreateChallengeRoom"] = true
+                        }
+                    }
+                    game:GetService("ReplicatedStorage").Remote.Server.PlayRoom.Event:FireServer(unpack(createArgs))
+
+                    task.wait(2)
+
+                    local startArgs = {
+                        [1] = "Start"
+                    }
+                    game:GetService("ReplicatedStorage").Remote.Server.PlayRoom.Event:FireServer(unpack(startArgs))
+                end
+
+                manageRoom()
+                break -- run only once per activation
+            end
+            task.wait(2)
         end
-
-        if not Options.AutoJoinChallenge.Value then return end
-
-        local player = game:GetService("Players").LocalPlayer
-        local RS = game:GetService("ReplicatedStorage")
-        local playerGui = player:WaitForChild("PlayerGui")
-        local playRoomGui = playerGui:WaitForChild("PlayRoom")
-
-        -- Enable GUI
-        playRoomGui.Enabled = true
-
-        -- Notify
-        Fluent:Notify({
-            Title = "Auto Join Challenge",
-            Content = "Creating Challenge Room...",
-            Duration = 3
-        })
-
-        -- Fire Create Room
-        RS.Remote.Server.PlayRoom.Event:FireServer({
-            [1] = "Create",
-            [2] = {
-                ["CreateChallengeRoom"] = true
-            }
-        })
-
-        task.wait(2)
-
-        -- Fire Start
-        RS.Remote.Server.PlayRoom.Event:FireServer({
-            [1] = "Start"
-        })
-
-        Fluent:Notify({
-            Title = "Auto Join Challenge",
-            Content = "Challenge Started!",
-            Duration = 3
-        })
     end)
 end)
 
