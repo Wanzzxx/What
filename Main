@@ -225,6 +225,7 @@ local itemList = {
     ["Perfect Stats Key"] = "Perfect Stats Key",
     ["Stats Key"] = "Stats Key",
     ["Trait Reroll"] = "Trait Reroll",
+    ["Dr. Megga Punk"] = "Dr. Megga Punk",
     ["Cursed Finger"] = "Cursed Finger",
     ["Ranger Crystal"] = "Ranger Crystal"
 }
@@ -306,6 +307,7 @@ end)
 local RaidShopItems = {
     "Trait Reroll",
     "Stats Key",
+    "Dr. Megga Punk",
     "Perfect Stats Key",
     "Cursed Finger",
     "Gourmet Meal"
