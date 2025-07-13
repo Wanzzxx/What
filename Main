@@ -120,6 +120,66 @@ do
     end)
 end
 
+Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
+    Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
+    Default = false
+})
+
+Options.AutoBossRush:OnChanged(function(enabled)
+    if not enabled then return end
+    if workspace:FindFirstChild("Lobby") then return end
+
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local Remotes = ReplicatedStorage.Remote.Server.Units
+
+    local function getDeltaCollection()
+        local pd = ReplicatedStorage:WaitForChild("Player_Data")
+        local playerFolder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
+        if not playerFolder then
+            warn("[Delta‑Auto] Player_Data folder not found; aborting spawn.")
+            return nil
+        end
+        return playerFolder:WaitForChild("Collection"):WaitForChild("Delta")
+    end
+
+    local function upgradeDelta(times, delaySeconds)
+        local unit = LocalPlayer:WaitForChild("UnitsFolder"):WaitForChild("Delta")
+        for _ = 1, times do
+            Remotes.Upgrade:FireServer(unit)
+            task.wait(delaySeconds)
+        end
+    end
+
+    local function spawnDelta()
+        local deltaCollection = getDeltaCollection()
+        if deltaCollection then
+            Remotes.Deployment:FireServer(deltaCollection)
+            return true
+        end
+        return false
+    end
+
+    local function moveToPath(id)
+        Remotes.SelectWay:FireServer(id)
+    end
+
+    task.spawn(function()
+        local pathOrder = {2, 3, 4, 1}
+        while Options.AutoBossRush.Value and not Fluent.Unloaded and not workspace:FindFirstChild("Lobby") do
+            upgradeDelta(5, 2)
+            for _, pathId in ipairs(pathOrder) do
+                if spawnDelta() then
+                    task.wait(0.05)
+                    moveToPath(pathId)
+                end
+                task.wait(7)
+            end
+        end
+    end)
+end)
+
 -- Auto Join Summer Event
 Options.AutoJoinSummer = Tabs.Joiner:AddToggle("AutoJoinSummer", {
     Title = "Auto Join Summer Event",
