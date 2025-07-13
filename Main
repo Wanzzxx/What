@@ -180,6 +180,45 @@ Options.AutoBossRush:OnChanged(function(enabled)
     end)
 end)
 
+Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
+    Title = "Auto Join Boss Rush",
+    Default = false
+})
+
+Options.AutoJoinBossRush:OnChanged(function(enabled)
+    if not enabled then return end
+
+    task.spawn(function()
+        while Options.AutoJoinBossRush.Value and not Fluent.Unloaded do
+            if workspace:FindFirstChild("Lobby") then
+                local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+                local playRoomGui = playerGui:WaitForChild("PlayRoom")
+                playRoomGui.Enabled = true
+
+                local function manageBossRush()
+                    local createArgs = {
+                        [1] = "BossRush"
+                    }
+                    game:GetService("ReplicatedStorage").Remote.Server.PlayRoom.Event:FireServer(unpack(createArgs))
+
+                    wait(2)
+
+                    local startArgs = {
+                        [1] = "Start"
+                    }
+                    game:GetService("ReplicatedStorage").Remote.Server.PlayRoom.Event:FireServer(unpack(startArgs))
+                end
+
+                manageBossRush()
+                break
+            else
+                warn("Lobby not found - Boss Rush script not executed")
+            end
+            task.wait(2)
+        end
+    end)
+end)
+
 -- Auto Join Summer Event
 Options.AutoJoinSummer = Tabs.Joiner:AddToggle("AutoJoinSummer", {
     Title = "Auto Join Summer Event",
