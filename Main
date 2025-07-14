@@ -153,13 +153,10 @@ do
     end)
 end
 
-if true then
-task.wait(10)
 Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
     Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
     Default = false
 })
-end
 
 Options.AutoBossRush:OnChanged(function(enabled)
     if enabled then
@@ -187,6 +184,9 @@ Options.AutoBossRush:OnChanged(function(enabled)
                 end
             end
 
+            -- One-time delay before the loop starts
+            task.wait(13)
+
             local pathOrder = {1, 2, 3, 4, 1, 2, 3, 4}
             local deltaCollection = getDeltaCollection()
             if not deltaCollection then return end
@@ -204,6 +204,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
         end)
     end
 end)
+
 
 Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
     Title = "Auto Join Boss Rush",
