@@ -127,54 +127,52 @@ Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
 
 Options.AutoBossRush:OnChanged(function(enabled)
     if not enabled then return end
-    if workspace:FindFirstChild("Lobby") then return end
-
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local Remotes = ReplicatedStorage.Remote.Server.Units
-
-    local function getDeltaCollection()
-        local pd = ReplicatedStorage:WaitForChild("Player_Data")
-        local playerFolder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
-        if not playerFolder then
-            warn("[Delta‑Auto] Player_Data folder not found; aborting spawn.")
-            return nil
-        end
-        return playerFolder:WaitForChild("Collection"):WaitForChild("Delta")
-    end
-
-    local function upgradeDelta(times, delaySeconds)
-        local unit = LocalPlayer:WaitForChild("UnitsFolder"):WaitForChild("Delta")
-        for _ = 1, times do
-            Remotes.Upgrade:FireServer(unit)
-            task.wait(delaySeconds)
-        end
-    end
-
-    local function spawnDelta()
-        local deltaCollection = getDeltaCollection()
-        if deltaCollection then
-            Remotes.Deployment:FireServer(deltaCollection)
-            return true
-        end
-        return false
-    end
-
-    local function moveToPath(id)
-        Remotes.SelectWay:FireServer(id)
-    end
 
     task.spawn(function()
+        if workspace:FindFirstChild("Lobby") then
+            warn("Lobby exists — Auto Boss Rush aborted")
+            return
+        end
+
+        --// Services
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local Remotes = ReplicatedStorage.Remote.Server.Units
+
+        --// Helper: safely get Delta from Collection
+        local function getDeltaCollection()
+            local pd = ReplicatedStorage:WaitForChild("Player_Data")
+            local playerFolder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
+            if not playerFolder then
+                warn("[Delta‑Auto] Player_Data folder not found.")
+                return nil
+            end
+            return playerFolder:WaitForChild("Collection"):WaitForChild("Delta")
+        end
+
+        --// Upgrade Delta 5x with tiny delay to avoid server rate-limit
+        local function upgradeDelta()
+            local unit = LocalPlayer:WaitForChild("UnitsFolder"):WaitForChild("Delta")
+            for _ = 1, 5 do
+                Remotes.Upgrade:FireServer(unit)
+                task.wait(0.1) -- Tiny delay so all upgrades go through
+            end
+        end
+
+        --// Main Loop
+        upgradeDelta() -- Fast & reliable upgrades
+
         local pathOrder = {2, 3, 4, 1}
-        while Options.AutoBossRush.Value and not Fluent.Unloaded and not workspace:FindFirstChild("Lobby") do
-            upgradeDelta(5, 2)
+        local deltaCollection = getDeltaCollection()
+        if not deltaCollection then return end
+
+        while Options.AutoBossRush.Value and not Fluent.Unloaded do
             for _, pathId in ipairs(pathOrder) do
-                if spawnDelta() then
-                    task.wait(0.05)
-                    moveToPath(pathId)
-                end
-                task.wait(7)
+                Remotes.Deployment:FireServer(deltaCollection)
+                task.wait(0.05)
+                Remotes.SelectWay:FireServer(pathId)
+                task.wait(3.4) -- Always wait 3.4 sec per cycle
             end
         end
     end)
