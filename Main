@@ -184,7 +184,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
                 end
             end
 
-            local pathOrder = {2, 3, 4, 1, 2, 3, 4}
+            local pathOrder = {1, 2, 3, 4, 1, 2, 3, 4}
             local deltaCollection = getDeltaCollection()
             if not deltaCollection then return end
 
