@@ -67,13 +67,13 @@ local selectedSpeed = 1 -- Default
 Options.GameSpeed = Tabs.Main:AddDropdown("GameSpeed", {
     Title = "Change Game Speed",
     Values = {"1", "2", "3 (Only Gamepass)"},
-    Default = "1"
+    Default = "2"
 })
 
 Options.GameSpeed:OnChanged(function(speedValue)
     local speedNum = tonumber(speedValue)
     if speedNum then
-        local args = { [1] = speedNum }
+        local args = { [2] = speedNum }
         game:GetService("ReplicatedStorage").Remote.SpeedGamepass:FireServer(unpack(args))
 
         Fluent:Notify({
