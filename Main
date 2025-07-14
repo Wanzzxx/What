@@ -152,12 +152,14 @@ do
         end
     end)
 end
+
 if true then
-task.wait(5)
+task.wait(10)
 Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
     Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
     Default = false
 })
+end
 end
 
 Options.AutoBossRush:OnChanged(function(enabled)
