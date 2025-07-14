@@ -158,6 +158,8 @@ Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
     Default = false
 })
 
+if true then
+task wait(5)
 Options.AutoBossRush:OnChanged(function(enabled)
     if enabled then
         task.spawn(function()
@@ -198,6 +200,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
                     task.wait(3.2)
                 end
             end
+          end
         end)
     end
 end)
