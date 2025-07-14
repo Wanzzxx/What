@@ -62,23 +62,34 @@ local buyActive = false
 
 -- Toggle
 
-local selectedSpeed = 1 -- Default
+local selectedSpeed = 1
+local loopActive = true
 
+-- Dropdown
 Options.GameSpeed = Tabs.Main:AddDropdown("GameSpeed", {
     Title = "Change Game Speed",
-    Values = {"1", "2", "3 (Only Gamepass)"},
-    Default = "2"
+    Values = {"1", "2", "3"},
+    Default = "1"
 })
 
+-- Loop
+task.spawn(function()
+    while task.wait(1) do
+        if loopActive and selectedSpeed then
+            local args = { [1] = selectedSpeed }
+            game:GetService("ReplicatedStorage").Remote.SpeedGamepass:FireServer(unpack(args))
+        end
+    end
+end)
+
+-- When dropdown is changed
 Options.GameSpeed:OnChanged(function(speedValue)
     local speedNum = tonumber(speedValue)
     if speedNum then
-        local args = { [2] = speedNum }
-        game:GetService("ReplicatedStorage").Remote.SpeedGamepass:FireServer(unpack(args))
-
+        selectedSpeed = speedNum
         Fluent:Notify({
             Title = "Speed Changed",
-            Content = "Speed set to " .. speedValue,
+            Content = "Looping speed: " .. speedValue,
             Duration = 3
         })
     end
