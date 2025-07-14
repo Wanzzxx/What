@@ -62,25 +62,15 @@ local buyActive = false
 
 -- Toggle
 
-local selectedSpeed = 1
+local selectedSpeed = 1 -- Default
 
--- Dropdown for speed selection
-Options.GameSpeed = Tabs.Main:AddDropdown("GameSpeed", {
+Options.GameSpeed = Tabs.Settings:AddDropdown("GameSpeed", {
     Title = "Change Game Speed",
     Values = {"1", "2", "3 (Only Gamepass)"},
     Default = "1"
 })
 
--- Toggle to control whether speed should be applied
-Options.EnableSpeedControl = Tabs.Main:AddToggle("EnableSpeedControl", {
-    Title = "Enable Speed Control",
-    Default = false
-})
-
--- Handle dropdown change
 Options.GameSpeed:OnChanged(function(speedValue)
-    if not Options.EnableSpeedControl.Value then return end
-
     local speedNum = tonumber(speedValue)
     if speedNum then
         local args = { [1] = speedNum }
@@ -91,13 +81,6 @@ Options.GameSpeed:OnChanged(function(speedValue)
             Content = "Speed set to " .. speedValue,
             Duration = 3
         })
-    end
-end)
-
--- When toggle is turned on, fire current selected speed
-Options.EnableSpeedControl:OnChanged(function(state)
-    if state then
-        Options.GameSpeed:OnChanged(Options.GameSpeed.Value)
     end
 end)
 
