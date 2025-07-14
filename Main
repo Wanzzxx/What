@@ -195,7 +195,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
                     Remotes.Deployment:FireServer(deltaCollection)
                     task.wait(0.05)
                     Remotes.SelectWay:FireServer(pathId)
-                    task.wait(3.3)
+                    task.wait(3.2)
                 end
             end
         end)
