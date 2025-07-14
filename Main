@@ -190,7 +190,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
         end
 
         -- Main loop
-        local paths = {4, 1, 2, 3}
+        local paths = {2, 3, 4}
         local delta = getDeltaCollection()
         if not delta then return end
 
