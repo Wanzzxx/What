@@ -163,7 +163,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
 
     task.spawn(function()
         -- One‑time delay **before** we do anything else
-        task.wait(13)
+        task.wait(18)
         if not Options.AutoBossRush.Value or Fluent.Unloaded then return end
 
         --// Services
@@ -190,7 +190,7 @@ Options.AutoBossRush:OnChanged(function(enabled)
         end
 
         -- Main loop
-        local paths = {2, 3, 4, 1}
+        local paths = {4, 2, 3, 1}
         local delta = getDeltaCollection()
         if not delta then return end
 
