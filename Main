@@ -89,7 +89,7 @@ Options.GameSpeed:OnChanged(function(speedValue)
         selectedSpeed = speedNum
         Fluent:Notify({
             Title = "Speed Changed",
-            Content = "Looping speed: " .. speedValue,
+            Content = "Current Speed: " .. speedValue,
             Duration = 3
         })
     end
