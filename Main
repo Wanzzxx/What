@@ -64,7 +64,7 @@ local buyActive = false
 
 local selectedSpeed = 1 -- Default
 
-Options.GameSpeed = Tabs.Settings:AddDropdown("GameSpeed", {
+Options.GameSpeed = Tabs.Main:AddDropdown("GameSpeed", {
     Title = "Change Game Speed",
     Values = {"1", "2", "3 (Only Gamepass)"},
     Default = "1"
