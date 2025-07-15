@@ -439,6 +439,27 @@ local RaidShopItems = {
     "Gourmet Meal"
 }
 
+-- Auto‑claim all quests every 20 s
+Options.AutoClaimQuest = Tabs.Misc:AddToggle("AutoClaimQuest", {
+    Title   = "Auto Claim All Quest",
+    Default = false
+})
+
+Options.AutoClaimQuest:OnChanged(function(state)
+    if not state then return end
+
+    task.spawn(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local questRemote = RS.Remote.Server.Gameplay.QuestEvent
+
+        while Options.AutoClaimQuest.Value and not Fluent.Unloaded do
+            questRemote:FireServer({ [1] = "ClaimAll" })
+            task.wait(20)                                   -- loop delay
+        end
+    end)
+end)
+
+
 -- Raid shop
 local RaidDropdown = Tabs.Shop:AddDropdown("RaidShopItems", {
     Title = "Auto Buy [Raid Shop]",
