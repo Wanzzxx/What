@@ -50,6 +50,7 @@ end)
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Menu", Icon = "" }),
+    Auto = Window:AddTab({ Title = "Automatically", Icon = "" }),
     Joiner = Window:AddTab ({ Title = "Auto Join", Icon = "" }),
     Shop = Window:AddTab ({ Title = "Shop", Icon = "" }),
     Misc = Window:AddTab({ Title = "Menu Tambahan", Icon = "settings" }),
@@ -153,84 +154,63 @@ do
     end)
 end
 
---// Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players           = game:GetService("Players")
-local LocalPlayer       = Players.LocalPlayer
-local Remotes           = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Units")
+Options.AutoBossRush = Tabs.Auto:AddToggle("AutoBossRush", {
+    Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
+    Default = false
+})
 
------------------------------------------------------------------
---  Helpers
------------------------------------------------------------------
-local function getDeltaCollection()
-    local pd = ReplicatedStorage:WaitForChild("Player_Data")
-    local folder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
+Options.AutoBossRush:OnChanged(function(enabled)
+    if not enabled then return end
 
-    if not folder then
-        warn("[Delta‑Auto] Player_Data folder missing.")
-        return nil
-    end
+    task.spawn(function()
+        if workspace:FindFirstChild("Lobby") then return end
 
-    local success, collection = pcall(function()
-        return folder:WaitForChild("Collection"):WaitForChild("Delta")
-    end)
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local Remotes = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Units")
 
-    if not success or not collection then
-        warn("[Delta‑Auto] Delta not found in Collection.")
-        return nil
-    end
-
-    return collection
-end
-
-local function upgradeDelta()
-    local unitFolder = LocalPlayer:FindFirstChild("UnitsFolder")
-    if not unitFolder then
-        warn("[Delta‑Auto] UnitsFolder not found.")
-        return
-    end
-
-    local unit = unitFolder:FindFirstChild("Delta")
-    if not unit then
-        warn("[Delta‑Auto] Delta unit not found in UnitsFolder.")
-        return
-    end
-
-    for i = 1, 5 do
-        Remotes.Upgrade:FireServer(unit)
-        task.wait(0.2) -- Slightly longer delay to reduce server stress
-    end
-end
-
------------------------------------------------------------------
---  Main Loop
------------------------------------------------------------------
-task.spawn(function()
-    local deltaCollection = getDeltaCollection()
-    if not deltaCollection then return end
-
-    local pathOrder = {1, 2, 3, 4}
-
-    print("[Delta‑Auto] Starting in 18s...")
-    task.wait(18) -- ⏱ One-time delay before the loop starts
-    print("[Delta‑Auto] Starting loop now.")
-
-    while true do
-        for _, pathId in ipairs(pathOrder) do
-            print("[Delta‑Auto] Upgrading Delta...")
-            upgradeDelta()
-
-            task.wait(1)
-            print("[Delta‑Auto] Selecting path:", pathId)
-            Remotes.SelectWay:FireServer(pathId)
-
-            task.wait(0.5)
-            print("[Delta‑Auto] Deploying Delta...")
-            Remotes.Deployment:FireServer(deltaCollection)
-
-            task.wait(3.4)
+        local function getDeltaCollection()
+            local pd = ReplicatedStorage:WaitForChild("Player_Data")
+            local folder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
+            if not folder then return nil end
+            local success, collection = pcall(function()
+                return folder:WaitForChild("Collection"):WaitForChild("Delta")
+            end)
+            if not success or not collection then return nil end
+            return collection
         end
-    end
+
+        local function upgradeDelta()
+            local unitFolder = LocalPlayer:FindFirstChild("UnitsFolder")
+            if not unitFolder then return end
+            local unit = unitFolder:FindFirstChild("Delta")
+            if not unit then return end
+            for i = 1, 5 do
+                Remotes.Upgrade:FireServer(unit)
+                task.wait(0.2)
+            end
+        end
+
+        local deltaCollection = getDeltaCollection()
+        if not deltaCollection then return end
+
+        local pathOrder = {1, 2, 3, 4}
+
+        task.wait(18)
+
+        while Options.AutoBossRush.Value and not Fluent.Unloaded do
+            for _, pathId in ipairs(pathOrder) do
+                if not Options.AutoBossRush.Value then break end
+                upgradeDelta()
+                task.wait(1)
+                Remotes.SelectWay:FireServer(pathId)
+                task.wait(0.5)
+                Remotes.Deployment:FireServer(deltaCollection)
+                task.wait(3.4)
+            end
+        end
+    end)
 end)
 
 
