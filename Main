@@ -153,58 +153,56 @@ do
     end)
 end
 
-Options.AutoBossRush = Tabs.Main:AddToggle("AutoBossRush", {
-    Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
-    Default = false
-})
+--// Services
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players          = game:GetService("Players")
+local LocalPlayer      = Players.LocalPlayer
+local Remotes          = ReplicatedStorage.Remote.Server.Units
 
-Options.AutoBossRush:OnChanged(function(enabled)
-    if not enabled then return end           -- Only act on ON
+-----------------------------------------------------------------
+--  Helpers
+-----------------------------------------------------------------
+local function getDeltaCollection()
+    local pd = ReplicatedStorage:WaitForChild("Player_Data")
+    local folder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
+    if not folder then
+        warn("[Delta‑Auto] Player_Data folder missing.")
+        return nil
+    end
+    return folder:WaitForChild("Collection"):WaitForChild("Delta")
+end
 
-    task.spawn(function()
-        -- One‑time delay **before** we do anything else
-        task.wait(18)
-        if not Options.AutoBossRush.Value or Fluent.Unloaded then return end
+local function upgradeDelta()
+    local unit = LocalPlayer:WaitForChild("UnitsFolder"):WaitForChild("Delta")
+    for _ = 1, 5 do
+        Remotes.Upgrade:FireServer(unit)
+        task.wait(0.1)
+    end
+end
 
-        --// Services
-        local RS = game:GetService("ReplicatedStorage")
-        local Players = game:GetService("Players")
-        local LP = Players.LocalPlayer
-        local Remotes = RS.Remote.Server.Units
+-----------------------------------------------------------------
+--  Main Loop
+-----------------------------------------------------------------
+task.spawn(function()
+    local deltaCollection = getDeltaCollection()
+    if not deltaCollection then return end
 
-        -- Helper: get Delta
-        local function getDeltaCollection()
-            local pd = RS:WaitForChild("Player_Data")
-            local f  = pd:FindFirstChild(LP.Name) or pd:FindFirstChild(tostring(LP.UserId))
-            if not f then warn("[Delta‑Auto] Player_Data folder not found.") return end
-            return f:WaitForChild("Collection"):WaitForChild("Delta")
+    local pathOrder = {1, 2, 3, 4}
+
+    task.wait(18) -- ⏱ One-time delay before the loop starts
+
+    while true do
+        for _, pathId in ipairs(pathOrder) do
+            upgradeDelta()                               -- ① upgrade 5×
+            task.wait(1)                                 -- ② wait 1s
+            Remotes.SelectWay:FireServer(pathId)         -- ③ set path
+            task.wait(0.5)                               -- ④ wait 0.5s
+            Remotes.Deployment:FireServer(deltaCollection) -- ⑤ spawn Δ
+            task.wait(3.4)                               -- ⑥ wait 3.4s
         end
+    end
+end)
 
-        -- Upgrade Delta 5×
-        local function upgradeDelta()
-            local unit = LP:WaitForChild("UnitsFolder"):WaitForChild("Delta")
-            for _ = 1, 5 do
-                Remotes.Upgrade:FireServer(unit)
-                task.wait(0.1)
-            end
-        end
-
-        -- Main loop
-        local paths = {2, 3, 4, 1}
-        local delta = getDeltaCollection()
-        if not delta then return end
-
-        while Options.AutoBossRush.Value and not Fluent.Unloaded do
-            for _, id in ipairs(paths) do
-                if not Options.AutoBossRush.Value then break end
-                upgradeDelta()
-                Remotes.Deployment:FireServer(delta)
-                task.wait(0.05)
-                Remotes.SelectWay:FireServer(id)
-                task.wait(3.6)
-            end
-        end
-    end)
 end)
 
 Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
