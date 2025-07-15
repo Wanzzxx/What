@@ -14,6 +14,74 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- ⏱ Time‑Since‑Executed “notification” (Smaller, centered)
+-- Put in a LocalScript (e.g., StarterPlayerScripts)
+
+local Players    = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local playerGui  = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create GUI container
+local gui = Instance.new("ScreenGui")
+gui.Name = "ElapsedTimerGui"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 10
+gui.IgnoreGuiInset = true
+gui.Parent = playerGui
+
+-- Frame (centered, smaller)
+local frame = Instance.new("Frame")
+frame.AnchorPoint = Vector2.new(0.5, 0) -- Center horizontally
+frame.Position    = UDim2.new(0.5, 0, 0, 30)
+frame.Size        = UDim2.new(0, 200, 0, 50)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BackgroundTransparency = 0.15
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+-- Title text
+local title = Instance.new("TextLabel")
+title.Size          = UDim2.new(1, -12, 0, 20)
+title.Position      = UDim2.new(0, 6, 0, 4)
+title.Text          = "Timer Since Script Executed:"
+title.Font          = Enum.Font.GothamBold
+title.TextSize      = 16
+title.TextColor3    = Color3.new(1, 1, 1)
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.Parent = frame
+
+local body = Instance.new("TextLabel")
+body.Size           = UDim2.new(1, -12, 0, 20)
+body.Position       = UDim2.new(0, 6, 0, 26)
+body.Text           = "0:00"
+body.Font           = Enum.Font.Gotham
+body.TextSize       = 14
+body.TextColor3     = Color3.new(1, 1, 1)
+body.BackgroundTransparency = 1
+body.TextXAlignment = Enum.TextXAlignment.Center
+body.Parent = frame
+
+-- Timer logic
+local startTick = tick()
+
+RunService.RenderStepped:Connect(function()
+    local elapsed = math.floor(tick() - startTick)
+    local minutes = math.floor(elapsed / 60)
+    local seconds = elapsed % 60
+
+    if minutes > 59 then
+        local hours = math.floor(minutes / 60)
+        minutes = minutes % 60
+        body.Text = string.format("%d:%02d:%02d", hours, minutes, seconds)
+    else
+        body.Text = string.format("%d:%02d", minutes, seconds)
+    end
+end)
+
+
 -- Logo
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
