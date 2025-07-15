@@ -145,7 +145,7 @@ do
                 Duration = 3
             })
 
-            if heartbeatConnection then
+            if heartbatConnection then
                 heartbeatConnection:Disconnect()
                 heartbeatConnection = nil
             end
@@ -153,57 +153,6 @@ do
     end)
 end
 
---// Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players          = game:GetService("Players")
-local LocalPlayer      = Players.LocalPlayer
-local Remotes          = ReplicatedStorage.Remote.Server.Units
-
------------------------------------------------------------------
---  Helpers
------------------------------------------------------------------
-local function getDeltaCollection()
-    local pd = ReplicatedStorage:WaitForChild("Player_Data")
-    local folder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
-    if not folder then
-        warn("[Delta‑Auto] Player_Data folder missing.")
-        return nil
-    end
-    return folder:WaitForChild("Collection"):WaitForChild("Delta")
-end
-
-local function upgradeDelta()
-    local unit = LocalPlayer:WaitForChild("UnitsFolder"):WaitForChild("Delta")
-    for _ = 1, 5 do
-        Remotes.Upgrade:FireServer(unit)
-        task.wait(0.1)
-    end
-end
-
------------------------------------------------------------------
---  Main Loop
------------------------------------------------------------------
-task.spawn(function()
-    local deltaCollection = getDeltaCollection()
-    if not deltaCollection then return end
-
-    local pathOrder = {1, 2, 3, 4}
-
-    task.wait(18) -- ⏱ One-time delay before the loop starts
-
-    while true do
-        for _, pathId in ipairs(pathOrder) do
-            upgradeDelta()                               -- ① upgrade 5×
-            task.wait(1)                                 -- ② wait 1s
-            Remotes.SelectWay:FireServer(pathId)         -- ③ set path
-            task.wait(0.5)                               -- ④ wait 0.5s
-            Remotes.Deployment:FireServer(deltaCollection) -- ⑤ spawn Δ
-            task.wait(3.4)                               -- ⑥ wait 3.4s
-        end
-    end
-end)
-
-end)
 
 Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
     Title = "Auto Join Boss Rush",
