@@ -321,6 +321,53 @@ Options.AutoJoinBossRush:OnChanged(function(enabled)
     end)
 end)
 
+Options.AutoBossAttack = Tabs.Joiner:AddToggle("AutoBossAttack", {
+    Title = "Auto Boss Attack",
+    Default = false,
+})
+
+Options.AutoBossAttack:OnChanged(function(enabled)
+    if not enabled then return end
+
+    task.spawn(function()
+        local RS  = game:GetService("ReplicatedStorage")
+        local VRem = RS.Remote.Server.OnGame.Voting
+        local Players = game:GetService("Players")
+        local LP      = Players.LocalPlayer
+
+        while Options.AutoBossAttack.Value and not Fluent.Unloaded do
+            local pg   = LP:FindFirstChild("PlayerGui")
+            local root = pg and pg:FindFirstChild("BossAttack")
+            local tLbl = root and root:FindFirstChild("Main")
+                          and root.Main:FindFirstChild("PlayerCurrency")
+                          and root.Main.PlayerCurrency:FindFirstChild("TicketLeft")
+
+            if tLbl and tLbl:IsA("TextLabel") then
+                local n = tonumber(tLbl.Text:match("%d+"))
+
+                if n == 3 then
+                    RS.Remote.Server.PlayRoom.Event:FireServer({ "Boss-Attack" })
+                elseif n == 0 then
+                    -- spam VoteLeave until we exit (same style as VoteRetry loop)
+                    Fluent:Notify({Title="Boss Attack",Content="Tickets 0 — voting to leave",Duration=3})
+                    while n == 0 and Options.AutoBossAttack.Value do
+                        VRem.VoteLeave:FireServer()
+                        task.wait(1)
+                        local txt = tLbl.Text
+                        n = tonumber(txt:match("%d+")) or 0
+                    end
+                    -- ensure VoteRetry is off
+                    if Options.VoteRetry and Options.VoteRetry.Value then
+                        Options.VoteRetry:SetValue(false)
+                    end
+                end
+            end
+            task.wait(2)
+        end
+    end)
+end)
+
+
 -- Auto Join Summer Event
 Options.AutoJoinSummer = Tabs.Joiner:AddToggle("AutoJoinSummer", {
     Title = "Auto Join Summer Event",
