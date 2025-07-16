@@ -322,7 +322,7 @@ Options.AutoJoinBossRush:OnChanged(function(enabled)
 end)
 
 Options.AutoBossAttack = Tabs.Joiner:AddToggle("AutoBossAttack", {
-    Title = "Auto Boss Attack",
+    Title   = "Auto Boss Attack",
     Default = false
 })
 
@@ -331,47 +331,47 @@ Options.AutoBossAttack:OnChanged(function(v)
 
     task.spawn(function()
         while Options.AutoBossAttack.Value do
-            local Players = game:GetService("Players")
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local LocalPlayer = Players.LocalPlayer
-            local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            local Players            = game:GetService("Players")
+            local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+            local LocalPlayer        = Players.LocalPlayer
+            local PlayerGui          = LocalPlayer:FindFirstChild("PlayerGui")
+            local bossUI             = PlayerGui and PlayerGui:FindFirstChild("BossAttack")
 
-            if not workspace:FindFirstChild("Lobby") then
-                task.wait(1)
-                continue
-            end
-
-            -- Open BossAttack UI
-            local bossUI = PlayerGui:FindFirstChild("BossAttack")
+            -- Force‑open UI every loop
             if bossUI then
                 bossUI.Enabled = true
             end
 
-            -- Wait 3 seconds before checking ticket
+            -- Wait 3 s before using the displayed ticket text
             task.wait(3)
 
-            -- Get ticket count
-            local ticketLabel = bossUI and bossUI:FindFirstChild("Main") and bossUI.Main:FindFirstChild("PlayerCurrency") and bossUI.Main.PlayerCurrency:FindFirstChild("TicketLeft")
+            local ticketLabel = bossUI
+                and bossUI:FindFirstChild("Main")
+                and bossUI.Main:FindFirstChild("PlayerCurrency")
+                and bossUI.Main.PlayerCurrency:FindFirstChild("TicketLeft")
+
             if ticketLabel and ticketLabel:IsA("TextLabel") then
-                local ticketText = ticketLabel.Text
+                local ticketText  = ticketLabel.Text         -- e.g. "TICKET LEFT: 3"
                 local ticketCount = tonumber(ticketText:match("%d+"))
 
-                -- Notify player
+                -- Notify user
                 Fluent:Notify({
-                    Title = "Boss Ticket",
-                    Content = "Your ticket is " .. ticketText,
+                    Title    = "Boss Ticket",
+                    Content  = "Your ticket is " .. ticketText,
                     Duration = 5
                 })
 
-                if ticketCount == 3 then
-                    local args = { "Boss-Attack" }
-                    ReplicatedStorage.Remote.Server.PlayRoom.Event:FireServer(unpack(args))
+                -- Auto‑join only when a Lobby exists
+                if ticketCount == 3 and workspace:FindFirstChild("Lobby") then
+                    ReplicatedStorage.Remote.Server.PlayRoom.Event:FireServer("Boss-Attack")
+
+                -- Always auto‑leave at 0, regardless of Lobby / VoteRetry toggle
                 elseif ticketCount == 0 then
                     ReplicatedStorage.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
                 end
             end
 
-            task.wait(10) -- Wait before next check
+            task.wait(10) -- Repeat every 10 s while toggle is ON
         end
     end)
 end)
