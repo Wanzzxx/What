@@ -323,46 +323,55 @@ end)
 
 Options.AutoBossAttack = Tabs.Joiner:AddToggle("AutoBossAttack", {
     Title = "Auto Boss Attack",
-    Default = false,
+    Default = false
 })
 
-Options.AutoBossAttack:OnChanged(function(enabled)
-    if not enabled then return end
+Options.AutoBossAttack:OnChanged(function(v)
+    if not v then return end
 
     task.spawn(function()
-        local RS  = game:GetService("ReplicatedStorage")
-        local VRem = RS.Remote.Server.OnGame.Voting
-        local Players = game:GetService("Players")
-        local LP      = Players.LocalPlayer
+        while Options.AutoBossAttack.Value do
+            local Players = game:GetService("Players")
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local LocalPlayer = Players.LocalPlayer
+            local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
 
-        while Options.AutoBossAttack.Value and not Fluent.Unloaded do
-            local pg   = LP:FindFirstChild("PlayerGui")
-            local root = pg and pg:FindFirstChild("BossAttack")
-            local tLbl = root and root:FindFirstChild("Main")
-                          and root.Main:FindFirstChild("PlayerCurrency")
-                          and root.Main.PlayerCurrency:FindFirstChild("TicketLeft")
+            if not workspace:FindFirstChild("Lobby") then
+                task.wait(1)
+                continue
+            end
 
-            if tLbl and tLbl:IsA("TextLabel") then
-                local n = tonumber(tLbl.Text:match("%d+"))
+            -- Open BossAttack UI
+            local bossUI = PlayerGui:FindFirstChild("BossAttack")
+            if bossUI then
+                bossUI.Enabled = true
+            end
 
-                if n == 3 then
-                    RS.Remote.Server.PlayRoom.Event:FireServer({ "Boss-Attack" })
-                elseif n == 0 then
-                    -- spam VoteLeave until we exit (same style as VoteRetry loop)
-                    Fluent:Notify({Title="Boss Attack",Content="Tickets 0 — voting to leave",Duration=3})
-                    while n == 0 and Options.AutoBossAttack.Value do
-                        VRem.VoteLeave:FireServer()
-                        task.wait(1)
-                        local txt = tLbl.Text
-                        n = tonumber(txt:match("%d+")) or 0
-                    end
-                    -- ensure VoteRetry is off
-                    if Options.VoteRetry and Options.VoteRetry.Value then
-                        Options.VoteRetry:SetValue(false)
-                    end
+            -- Wait 3 seconds before checking ticket
+            task.wait(3)
+
+            -- Get ticket count
+            local ticketLabel = bossUI and bossUI:FindFirstChild("Main") and bossUI.Main:FindFirstChild("PlayerCurrency") and bossUI.Main.PlayerCurrency:FindFirstChild("TicketLeft")
+            if ticketLabel and ticketLabel:IsA("TextLabel") then
+                local ticketText = ticketLabel.Text
+                local ticketCount = tonumber(ticketText:match("%d+"))
+
+                -- Notify player
+                Fluent:Notify({
+                    Title = "Boss Ticket",
+                    Content = "Your ticket is " .. ticketText,
+                    Duration = 5
+                })
+
+                if ticketCount == 3 then
+                    local args = { "Boss-Attack" }
+                    ReplicatedStorage.Remote.Server.PlayRoom.Event:FireServer(unpack(args))
+                elseif ticketCount == 0 then
+                    ReplicatedStorage.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
                 end
             end
-            task.wait(2)
+
+            task.wait(10) -- Wait before next check
         end
     end)
 end)
