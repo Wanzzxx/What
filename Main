@@ -222,6 +222,58 @@ do
     end)
 end
 
+local Players           = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer   = Players.LocalPlayer
+local BossGui       = LocalPlayer:WaitForChild("PlayerGui")
+                      :WaitForChild("BossAttack")
+                      :WaitForChild("Main")
+local TicketLabel   = BossGui.PlayerCurrency.TicketLeft
+
+local PlayRoomRemote   = ReplicatedStorage.Remote.Server.PlayRoom.Event
+local VoteLeaveRemote  = ReplicatedStorage.Remote.Server.OnGame.Voting.VoteLeave  -- ← THIS was missing!
+
+local autoBoss = {Enabled = false}
+
+Options.AutoBossAttack = Tabs.Joiner:AddToggle("AutoBossAttack", {
+    Title   = "Auto Boss Attack",
+    Default = false
+})
+
+Options.AutoBossAttack:OnChanged(function(v)
+    autoBoss.Enabled = v
+
+    if v then
+        Fluent:Notify({
+            Title    = "Auto Boss Attack",
+            Content  = "Joining When Your Tickets Are 3 left.",
+            Duration = 3
+        })
+
+        task.spawn(function()
+            while autoBoss.Enabled do
+                local text = TicketLabel.Text  -- e.g. "TICKET LEFT: 3"
+
+                if text == "TICKET LEFT: 3" then
+                    PlayRoomRemote:FireServer("Boss-Attack")
+
+                elseif text == "TICKET LEFT: 0" then
+                    Options.VoteRetry:SetValue(false)  -- stop retrying
+                    -- keep voting to leave until tickets change or toggle off
+                    while autoBoss.Enabled and TicketLabel.Text == "TICKET LEFT: 0" do
+                        VoteLeaveRemote:FireServer()
+                        task.wait(1)
+                    end
+                end
+
+                task.wait(1)
+            end
+        end)
+    end
+end)
+
+
 Options.AutoBossRush = Tabs.Auto:AddToggle("AutoBossRush", {
     Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
     Default = false
