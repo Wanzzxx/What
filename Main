@@ -121,6 +121,7 @@ local Tabs = {
     Auto = Window:AddTab({ Title = "Automatically", Icon = "" }),
     Joiner = Window:AddTab ({ Title = "Auto Join", Icon = "" }),
     Shop = Window:AddTab ({ Title = "Shop", Icon = "" }),
+    Webhook = Window:AddTab ({ Title = "Webhook", Icon = "" }),
     Misc = Window:AddTab({ Title = "Menu Tambahan", Icon = "settings" }),
     Settings = Window:AddTab({ Title = "Pengaturan", Icon = "settings" })
 }
@@ -778,6 +779,80 @@ Options.AutoStart:OnChanged(function(state)
     end)
 end)
 
+-- Webhook Input
+local webhookURL = ""
+local webhookActive = false
+
+local Input = Tabs.Webhook:AddInput("WebhookInput", {
+    Title = "Paste Your Webhook",
+    Default = "",
+    Placeholder = "https://discord.com/api/webhooks/...",
+    Numeric = false,
+    Finished = true,
+    Callback = function(Value)
+        webhookURL = Value
+        Fluent:Notify({Title = "Webhook Set", Content = "Webhook saved successfully.", Duration = 3})
+    end
+})
+
+-- Webhook Toggle
+local Toggle = Tabs.Webhook:AddToggle("WebhookToggle", {
+    Title = "Active Webhook",
+    Default = false
+})
+Toggle:OnChanged(function(v)
+    webhookActive = v
+    Fluent:Notify({
+        Title = "Webhook",
+        Content = v and "Webhook is now active!" or "Webhook is disabled.",
+        Duration = 3
+    })
+end)
+
+-- Test Webhook Button
+Tabs.Webhook:AddButton("TestWebhookButton", {
+    Title = "Test Webhook",
+    Callback = function()
+        if not webhookActive then
+            return Fluent:Notify({Title = "Webhook Disabled", Content = "Turn on 'Active Webhook' first.", Duration = 3})
+        end
+        if webhookURL == "" or not webhookURL:match("^https://discord.com/api/webhooks/") then
+            return Fluent:Notify({Title = "Invalid Webhook", Content = "Please paste a valid webhook URL.", Duration = 3})
+        end
+
+        local HttpService = game:GetService("HttpService")
+        local payload = HttpService:JSONEncode({
+            content = "",
+            embeds = {{
+                title = "✅ Webhook Test",
+                description = "Your webhook is working!",
+                color = 0x00ff00,
+                footer = { text = "Tested at " .. os.date("%Y-%m-%d %H:%M:%S") }
+            }}
+        })
+
+        local req = syn and syn.request or http_request or request or fluxus and fluxus.request
+        if req then
+            local success, err = pcall(function()
+                req({
+                    Url = webhookURL,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = payload
+                })
+            end)
+            Fluent:Notify({
+                Title = success and "Webhook Sent" or "Error",
+                Content = success and "Test message delivered." or tostring(err),
+                Duration = 4
+            })
+        else
+            Fluent:Notify({Title = "Exploit Not Supported", Content = "No HTTP request function available.", Duration = 4})
+        end
+    end
+})
+
+
 -- Stats ui
 function createStatsUI()
     local RS, Plrs = game:GetService("ReplicatedStorage"), game:GetService("Players")
@@ -858,52 +933,6 @@ function createStatsUI()
     end)
     player.AncestryChanged:Connect(function(_,p) if not p then hb:Disconnect() end end)
 end
-
--- Reward Notifier
-local function getPlayerItemAmount(name)
-    local p = game:GetService("Players").LocalPlayer
-    local d = game:GetService("ReplicatedStorage").Player_Data:FindFirstChild(p.Name)
-    if d and d:FindFirstChild("Items") then
-        local i = d.Items:FindFirstChild(name)
-        if i and i:FindFirstChild("Amount") then return i.Amount.Value end
-    end
-    return 0
-end
-
-local lastNotify = 0
-local function showGameResults()
-    if os.time() - lastNotify < 4 then return end
-    task.spawn(function()
-        task.wait(2)
-        local p = game:GetService("Players").LocalPlayer
-        local rw = p:FindFirstChild("RewardsShow")
-        if not rw then return end
-        local kids = rw:GetChildren()
-        if #kids == 0 then
-            Fluent:Notify({Title="Game Ended", Content="No rewards detected", Duration=3})
-            lastNotify = os.time()
-            return
-        end
-        local lines = {"Game Ended", "REWARDS:"}
-        for _,it in ipairs(kids) do
-            local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
-            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, it.Name, getPlayerItemAmount(it.Name)))
-        end
-        Fluent:Notify({Title="Game Results", Content=table.concat(lines, "\n"), Duration=6})
-        lastNotify = os.time()
-    end)
-end
-
-task.spawn(function()
-    local Plr = game:GetService("Players").LocalPlayer
-    while task.wait(0.5) do
-        local pg = Plr.PlayerGui
-        if pg:FindFirstChild("GameEndedAnimationUI") then
-            showGameResults()
-            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
-        end
-    end
-end)
 
 -- Function
 task.spawn(function()
