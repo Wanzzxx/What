@@ -789,7 +789,7 @@ local webhookURL = ""
 local webhookActive = false
 
 -- Input box for webhook
-Options.WebhookInput = Tabs.Main:AddInput("WebhookInput", {
+Options.WebhookInput = Tabs.Webhook:AddInput("WebhookInput", {
     Title = "Paste Your Webhook",
     Default = "",
     Placeholder = "https://discord.com/api/webhooks/...",
@@ -802,7 +802,7 @@ Options.WebhookInput = Tabs.Main:AddInput("WebhookInput", {
 })
 
 -- Toggle for enabling webhook
-Options.WebhookToggle = Tabs.Main:AddToggle("WebhookToggle", {
+Options.WebhookToggle = Tabs.Webhook:AddToggle("WebhookToggle", {
     Title = "Active Webhook",
     Default = false
 })
