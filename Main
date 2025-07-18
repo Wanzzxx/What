@@ -543,9 +543,9 @@ Options.AutoBuyToggle:OnChanged(function(enabled)
                         [2] = 1
                     }
                     RS.Remote.Server.Gameplay.Merchant:FireServer(unpack(args))
-                    task.wait(0.3) -- delay to avoid flooding
+                    task.wait(0.1) -- delay to avoid flooding
                 end
-                task.wait(1.5) -- overall loop delay
+                task.wait(0.1) -- overall loop delay
             end
         end)
     else
@@ -561,16 +561,7 @@ Options.AutoBuyToggle:OnChanged(function(enabled)
     end
 end)
 
-local RaidShopItems = {
-    "Trait Reroll",
-    "Stats Key",
-    "Dr. Megga Punk",
-    "Perfect Stats Key",
-    "Cursed Finger",
-    "Gourmet Meal"
-}
-
--- Auto‑claim all quests every 20 s
+-- Claim Quest
 Options.AutoClaimQuest = Tabs.Misc:AddToggle("AutoClaimQuest", {
     Title   = "Auto Claim All Quest",
     Default = false
@@ -590,6 +581,14 @@ Options.AutoClaimQuest:OnChanged(function(state)
     end)
 end)
 
+local RaidShopItems = {
+    "Trait Reroll",
+    "Stats Key",
+    "Dr. Megga Punk",
+    "Perfect Stats Key",
+    "Cursed Finger",
+    "Gourmet Meal"
+}
 
 -- Raid shop
 local RaidDropdown = Tabs.Shop:AddDropdown("RaidShopItems", {
@@ -630,10 +629,10 @@ Options.AutoBuyRaidShop:OnChanged(function(enabled)
                         if not success then
                             warn("[AutoBuy RaidShop] Failed to buy:", itemName, err)
                         end
-                        task.wait(0.25)
+                        task.wait(0.1)
                     end
                 end
-                task.wait(2)
+                task.wait(0.1)
             end
         end)
     else
