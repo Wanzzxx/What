@@ -929,7 +929,7 @@ end)
 task.spawn(function()
     local Plr = game:GetService("Players").LocalPlayer
     while true do
-        task.wait(1)
+        task.wait(2)
 
         -- Run in-game only
         if (Options.VoteNext.Value or Options.VoteRetry.Value)
