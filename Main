@@ -190,20 +190,24 @@ Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
     end
 })
 
---// Helper: Get Item Amount
+--// Helper: Get Accurate Player Item Amount
 local function getPlayerItemAmount(name)
-    local data = ReplicatedStorage:FindFirstChild("Player_Data")
-    local folder = data and data:FindFirstChild(LocalPlayer.Name)
-    if folder then
-        for _, child in ipairs(folder:GetDescendants()) do
-            if child:IsA("IntValue") or child:IsA("NumberValue") then
-                if string.lower(child.Name) == string.lower(name) then
-                    return child.Value
-                end
-            end
-        end
-    end
-    return 0
+    local playerData = ReplicatedStorage:FindFirstChild("Player_Data")
+    if not playerData then return 0 end
+
+    local folder = playerData:FindFirstChild(LocalPlayer.Name)
+    if not folder then return 0 end
+
+    local itemsFolder = folder:FindFirstChild("Items")
+    if not itemsFolder then return 0 end
+
+    local item = itemsFolder:FindFirstChild(name)
+    if not item then return 0 end
+
+    local amount = item:FindFirstChild("Amount")
+    if not amount or not amount:IsA("NumberValue") then return 0 end
+
+    return amount.Value
 end
 
 --// Send Webhook
@@ -238,32 +242,16 @@ local function sendWebhook(results)
 
     if not success then
         warn("Webhook failed:", err)
-        Fluent:Notify({
-            Title = "Webhook Error",
-            Content = tostring(err),
-            Duration = 4
-        })
     end
-end
-
---// Wait for RewardsShow to appear
-local function waitForRewards(timeout)
-    local timer = 0
-    while timer < timeout do
-        local rw = LocalPlayer:FindFirstChild("RewardsShow")
-        if rw and #rw:GetChildren() > 0 then return rw end
-        task.wait(0.5)
-        timer += 0.5
-    end
-    return nil
 end
 
 --// Game Result Handler
 local lastNotify = 0
 local function showGameResults()
-    if os.time() - lastNotify < 2 then return end
+    if os.time() - lastNotify < 4 then return end
     task.spawn(function()
-        local rw = waitForRewards(5)
+        task.wait(2)
+        local rw = LocalPlayer:FindFirstChild("RewardsShow")
         if not rw then return end
 
         local kids = rw:GetChildren()
@@ -276,7 +264,8 @@ local function showGameResults()
         local lines = {}
         for _, item in ipairs(kids) do
             local amt = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
-            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, getPlayerItemAmount(item.Name)))
+            local current = getPlayerItemAmount(item.Name)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, current))
         end
 
         local resultText = table.concat(lines, "\n")
@@ -287,13 +276,16 @@ local function showGameResults()
     end)
 end
 
---// Auto Detect Game End using ChildAdded
-LocalPlayer:WaitForChild("PlayerGui").ChildAdded:Connect(function(child)
-    if child.Name == "GameEndedAnimationUI" then
-        showGameResults()
+--// Auto Detect Game End
+task.spawn(function()
+    while task.wait(0.5) do
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        if pg and pg:FindFirstChild("GameEndedAnimationUI") then
+            showGameResults()
+            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
+        end
     end
 end)
-
 
 local selectedSpeed = 1
 local loopActive = true
