@@ -190,28 +190,16 @@ Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
     end
 })
 
---// Helper: Get Item Amount (Check Items and Data folders)
+--// Helper: Get Item Amount
 local function getPlayerItemAmount(name)
     local data = ReplicatedStorage:FindFirstChild("Player_Data")
     local folder = data and data:FindFirstChild(LocalPlayer.Name)
-    if not folder then return 0 end
-
-    -- Check Items folder
-    if folder:FindFirstChild("Items") then
+    if folder and folder:FindFirstChild("Items") then
         local item = folder.Items:FindFirstChild(name)
         if item and item:FindFirstChild("Amount") then
             return item.Amount.Value
         end
     end
-
-    -- Fallback: Check Data folder directly
-    if folder:FindFirstChild("Data") then
-        local item = folder.Data:FindFirstChild(name)
-        if item and item:IsA("NumberValue") then
-            return item.Value
-        end
-    end
-
     return 0
 end
 
@@ -247,16 +235,32 @@ local function sendWebhook(results)
 
     if not success then
         warn("Webhook failed:", err)
+        Fluent:Notify({
+            Title = "Webhook Error",
+            Content = tostring(err),
+            Duration = 4
+        })
     end
+end
+
+--// Wait for RewardsShow to appear
+local function waitForRewards(timeout)
+    local timer = 0
+    while timer < timeout do
+        local rw = LocalPlayer:FindFirstChild("RewardsShow")
+        if rw and #rw:GetChildren() > 0 then return rw end
+        task.wait(0.5)
+        timer += 0.5
+    end
+    return nil
 end
 
 --// Game Result Handler
 local lastNotify = 0
 local function showGameResults()
-    if os.time() - lastNotify < 4 then return end
+    if os.time() - lastNotify < 2 then return end
     task.spawn(function()
-        task.wait(2)
-        local rw = LocalPlayer:FindFirstChild("RewardsShow")
+        local rw = waitForRewards(5)
         if not rw then return end
 
         local kids = rw:GetChildren()
@@ -269,8 +273,7 @@ local function showGameResults()
         local lines = {}
         for _, item in ipairs(kids) do
             local amt = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
-            local nowAmt = getPlayerItemAmount(item.Name)
-            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, nowAmt))
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, getPlayerItemAmount(item.Name)))
         end
 
         local resultText = table.concat(lines, "\n")
@@ -281,14 +284,10 @@ local function showGameResults()
     end)
 end
 
---// Auto Detect Game End
-task.spawn(function()
-    while task.wait(0.5) do
-        local pg = LocalPlayer:FindFirstChild("PlayerGui")
-        if pg and pg:FindFirstChild("GameEndedAnimationUI") then
-            showGameResults()
-            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
-        end
+--// Auto Detect Game End using ChildAdded
+LocalPlayer:WaitForChild("PlayerGui").ChildAdded:Connect(function(child)
+    if child.Name == "GameEndedAnimationUI" then
+        showGameResults()
     end
 end)
 
