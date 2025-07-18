@@ -255,30 +255,42 @@ end
 local lastNotify = 0
 local function showGameResults()
     if os.time() - lastNotify < 4 then return end
-    task.spawn(function()
-        task.wait(2)
-        local rw = LocalPlayer:FindFirstChild("RewardsShow")
-        if not rw then return end
+    lastNotify = os.time()
 
-        local kids = rw:GetChildren()
-        if #kids == 0 then
+    task.spawn(function()
+        local timeout = 5
+        local rw
+        repeat
+            rw = LocalPlayer:FindFirstChild("RewardsShow")
+            task.wait(0.25)
+            timeout -= 0.25
+        until rw or timeout <= 0
+
+        if not rw then
+            Fluent:Notify({ Title = "Game Ended", Content = "No rewards panel found", Duration = 3 })
+            return
+        end
+
+        -- Wait a bit for children to populate
+        task.wait(1)
+
+        local children = rw:GetChildren()
+        if #children == 0 then
             Fluent:Notify({ Title = "Game Ended", Content = "No rewards detected", Duration = 3 })
-            lastNotify = os.time()
             return
         end
 
         local lines = {}
-        for _, item in ipairs(kids) do
-            local amt = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
-            local current = getPlayerItemAmount(item.Name)
-            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, current))
+        for _, item in ipairs(children) do
+            local rewardName = item.Name
+            local amount = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
+            local nowAmount = getPlayerItemAmount(rewardName)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amount, rewardName, nowAmount))
         end
 
         local resultText = table.concat(lines, "\n")
         Fluent:Notify({ Title = "Results Notify", Content = resultText, Duration = 6 })
-
         sendWebhook(resultText)
-        lastNotify = os.time()
     end)
 end
 
