@@ -192,22 +192,28 @@ Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
 
 --// Helper: Get Accurate Player Item Amount
 local function getPlayerItemAmount(name)
-    local playerData = ReplicatedStorage:FindFirstChild("Player_Data")
-    if not playerData then return 0 end
+    local playerFolder = ReplicatedStorage:FindFirstChild("Player_Data"):FindFirstChild(LocalPlayer.Name)
+    if not playerFolder then return 0 end
 
-    local folder = playerData:FindFirstChild(LocalPlayer.Name)
-    if not folder then return 0 end
+    -- First: check Items folder
+    local itemsFolder = playerFolder:FindFirstChild("Items")
+    if itemsFolder then
+        local item = itemsFolder:FindFirstChild(name)
+        if item and item:FindFirstChild("Amount") then
+            return item.Amount.Value
+        end
+    end
 
-    local itemsFolder = folder:FindFirstChild("Items")
-    if not itemsFolder then return 0 end
+    -- Second: check Data folder
+    local dataFolder = playerFolder:FindFirstChild("Data")
+    if dataFolder then
+        local stat = dataFolder:FindFirstChild(name)
+        if stat and stat:IsA("NumberValue") then
+            return stat.Value
+        end
+    end
 
-    local item = itemsFolder:FindFirstChild(name)
-    if not item then return 0 end
-
-    local amount = item:FindFirstChild("Amount")
-    if not amount or not amount:IsA("NumberValue") then return 0 end
-
-    return amount.Value
+    return 0
 end
 
 --// Send Webhook
