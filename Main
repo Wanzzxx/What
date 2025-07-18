@@ -194,10 +194,13 @@ Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
 local function getPlayerItemAmount(name)
     local data = ReplicatedStorage:FindFirstChild("Player_Data")
     local folder = data and data:FindFirstChild(LocalPlayer.Name)
-    if folder and folder:FindFirstChild("Items") then
-        local item = folder.Items:FindFirstChild(name)
-        if item and item:FindFirstChild("Amount") then
-            return item.Amount.Value
+    if folder then
+        for _, child in ipairs(folder:GetDescendants()) do
+            if child:IsA("IntValue") or child:IsA("NumberValue") then
+                if string.lower(child.Name) == string.lower(name) then
+                    return child.Value
+                end
+            end
         end
     end
     return 0
