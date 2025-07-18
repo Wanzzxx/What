@@ -824,8 +824,8 @@ Tabs.Webhook:AddButton("TestWebhookButton", {
         local payload = HttpService:JSONEncode({
             content = "",
             embeds = {{
-                title = "✅ Webhook Test",
-                description = "Your webhook is working!",
+                title = "Webhook Test",
+                description = "Hi, You good?",
                 color = 0x00ff00,
                 footer = { text = "Tested at " .. os.date("%Y-%m-%d %H:%M:%S") }
             }}
