@@ -623,21 +623,6 @@ Options.AutoJoinChallenge:OnChanged(function(enabled)
     end)
 end)
 
--- Stats UI
-Options.StatsUI = Tabs.Misc:AddToggle("StatsUI", { Title = "Status Checker", Default = false })
-Options.StatsUI:OnChanged(function(v)
-    if v then
-        createStatsUI()
-        Fluent:Notify({ Title = "Stats UI", Content = "UI shown", Duration = 3 })
-    else
-        local pg = game:GetService("Players").LocalPlayer.PlayerGui
-        if pg:FindFirstChild("PlayerStatsGUI") then
-            pg.PlayerStatsGUI:Destroy()
-            Fluent:Notify({ Title = "Stats UI", Content = "UI closed", Duration = 3 })
-        end
-    end
-end)
-
 -- Merchant
 
 local buyLoop
@@ -941,87 +926,6 @@ Options.AutoStart:OnChanged(function(state)
         end
     end)
 end)
-
--- Stats ui
-function createStatsUI()
-    local RS, Plrs = game:GetService("ReplicatedStorage"), game:GetService("Players")
-    local player, RunService = Plrs.LocalPlayer, game:GetService("RunService")
-
-    local function waitForData()
-        while not RS:FindFirstChild("Player_Data") do task.wait(1) end
-        for _ = 1,10 do
-            local d = RS.Player_Data:FindFirstChild(player.Name)
-            if d then return d end
-            task.wait(1)
-        end
-    end
-
-    local gui = Instance.new("ScreenGui", player.PlayerGui)
-    gui.Name = "PlayerStatsGUI"
-    local frame = Instance.new("Frame", gui)
-    frame.Size = UDim2.new(0,220,0,150)
-    frame.Position = UDim2.new(0.5,-110,0.1,0)
-    frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    frame.Active, frame.Draggable = true,true
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,8)
-
-    local title = Instance.new("TextLabel", frame)
-    title.Size = UDim2.new(1,0,0,30)
-    title.BackgroundColor3 = Color3.fromRGB(30,30,30)
-    title.TextColor3 = Color3.new(1,1,1)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-    title.Text = player.Name.."'s Stats"
-    Instance.new("UICorner", title).CornerRadius = UDim.new(0,8)
-
-    local lbls = {
-        beach = Instance.new("TextLabel"),
-        reroll = Instance.new("TextLabel"),
-        key = Instance.new("TextLabel"),
-        play = Instance.new("TextLabel")
-    }
-    local y=35
-    for _,l in pairs(lbls) do
-        l.Parent = frame
-        l.Size = UDim2.new(1,-20,0,25)
-        l.Position = UDim2.new(0,10,0,y)
-        l.BackgroundTransparency = 1
-        l.TextXAlignment = Enum.TextXAlignment.Left
-        l.Font = Enum.Font.Gotham
-        l.TextSize = 16
-        l.TextColor3 = Color3.new(1,1,1)
-        y += 25
-    end
-    lbls.beach.Text = "Beach Balls: Loading..."
-    lbls.reroll.Text = "Trait Rerolls: Loading..."
-    lbls.key.Text = "Stat Keys: Loading..."
-    lbls.play.Text = "Play Time: 00:00:00"
-
-    local data = waitForData()
-    if data then
-        local function link(item,parent,label,prefix)
-            local itm = data[parent]:FindFirstChild(item) or data[parent]:FindFirstChild(item:gsub(" ",""))
-            if itm and itm:FindFirstChild("Amount") then
-                local function upd() label.Text = prefix .. itm.Amount.Value end
-                itm.Amount.Changed:Connect(upd); upd()
-            else label.Text = prefix.."0 (Not Found)" end
-        end
-        link("Trait Reroll","Items",lbls.reroll,"Trait Rerolls: ")
-        link("Stats Key", "Items", lbls.key, "Stat Keys: ")
-        local beach = data.Data:FindFirstChild("Beach Balls") or data.Data:FindFirstChild("BeachBalls")
-        if beach then
-            beach.Changed:Connect(function() lbls.beach.Text = "Beach Balls: " .. beach.Value end)
-            lbls.beach.Text = "Beach Balls: " .. beach.Value
-        else lbls.beach.Text = "Beach Balls: 0 (Not Found)" end
-    end
-
-    local start = os.time()
-    local hb = RunService.Heartbeat:Connect(function()
-        local t = os.time() - start
-        lbls.play.Text = string.format("Play Time: %02d:%02d:%02d", t//3600, (t%3600)//60, t%60)
-    end)
-    player.AncestryChanged:Connect(function(_,p) if not p then hb:Disconnect() end end)
-end
 
 -- Function
 task.spawn(function()
