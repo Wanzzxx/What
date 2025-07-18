@@ -136,72 +136,109 @@ local buyActive = false
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local LocalPlayer = Players.LocalPlayer
 
--- Input + Toggle
-Options.WebhookInput = Tabs.Webhook:AddInput("PasteWebhook", {
+--// Persistent Storage
+local configFile = "webhook_settings.json"
+local Options = _G.Options or {}
+_G.Options = Options
+
+-- Load from file
+local function loadSettings()
+    if isfile and isfile(configFile) then
+        local success, content = pcall(readfile, configFile)
+        if success then
+            local decoded = HttpService:JSONDecode(content)
+            Options.WebhookURL_Value = decoded.WebhookURL or ""
+            Options.ActiveWebhook_Value = decoded.ActiveWebhook or false
+        end
+    end
+end
+
+-- Save to file
+local function saveSettings()
+    if writefile then
+        local data = {
+            WebhookURL = Options.WebhookURL.Value,
+            ActiveWebhook = Options.ActiveWebhook.Value
+        }
+        writefile(configFile, HttpService:JSONEncode(data))
+    end
+end
+
+loadSettings()
+
+--// Fluent UI Webhook Tab
+Options.WebhookURL = Tabs.Webhook:AddInput("WebhookInput", {
     Title = "Paste Your Webhook",
-    Default = "",
+    Default = Options.WebhookURL_Value or "",
     Placeholder = "https://discord.com/api/webhooks/...",
-    Numeric = false,
     Finished = true,
     Callback = function(Value)
-        print("Webhook set to:", Value)
+        Options.WebhookURL_Value = Value
+        saveSettings()
     end
 })
 
-Options.WebhookToggle = Tabs.Webhook:AddToggle("ActiveWebhook", {
+Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
     Title = "Active Webhook",
-    Default = false,
+    Default = Options.ActiveWebhook_Value or false,
     Callback = function(v)
-        print("Webhook Enabled:", v)
+        Options.ActiveWebhook_Value = v
+        saveSettings()
     end
 })
 
--- Get current item amount in inventory
+--// Helper: Get Item Amount
 local function getPlayerItemAmount(name)
-    local d = ReplicatedStorage:FindFirstChild("Player_Data")
-    if not d then return 0 end
-    local folder = d:FindFirstChild(LocalPlayer.Name)
+    local data = ReplicatedStorage:FindFirstChild("Player_Data")
+    local folder = data and data:FindFirstChild(LocalPlayer.Name)
     if folder and folder:FindFirstChild("Items") then
-        local i = folder.Items:FindFirstChild(name)
-        if i and i:FindFirstChild("Amount") then
-            return i.Amount.Value
+        local item = folder.Items:FindFirstChild(name)
+        if item and item:FindFirstChild("Amount") then
+            return item.Amount.Value
         end
     end
     return 0
 end
 
--- Send data to webhook
-local function sendWebhook(content)
-    local webhook = Options.WebhookInput and Options.WebhookInput.Value
-    local isEnabled = Options.WebhookToggle and Options.WebhookToggle.Value
+--// Send Webhook
+local function sendWebhook(results)
+    if not Options.ActiveWebhook.Value then return end
+    local url = Options.WebhookURL.Value
+    if url == "" then return end
 
-    if not isEnabled or not webhook or not webhook:find("^https://discord.com/api/webhooks/") then
-        warn("❌ Webhook not enabled or invalid.")
-        return
-    end
-
-    local payload = {
-        content = string.format("**Game Results:**\n**Rewards:**\n%s", content)
+    local placeName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+    local data = {
+        username = "Game Results",
+        embeds = {{
+            title = "Rewards:",
+            fields = {
+                { name = "Username", value = LocalPlayer.Name, inline = true },
+                { name = "UserID", value = tostring(LocalPlayer.UserId), inline = true },
+                { name = "Place", value = placeName, inline = false },
+                { name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = false },
+                { name = "Rewards", value = results, inline = false }
+            }
+        }}
     }
 
-    local json = HttpService:JSONEncode(payload)
-
-    local req = syn and syn.request or http_request or request or (fluxus and fluxus.request) or (getgenv and getgenv().request)
-    if req then
-        req({
-            Url = webhook,
+    local success, err = pcall(function()
+        request({
+            Url = url,
             Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = json
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
         })
-    else
-        warn("❌ No supported HTTP request method found.")
+    end)
+
+    if not success then
+        warn("Webhook failed:", err)
     end
 end
 
--- Show in-game + send webhook
+--// Game Result Handler
 local lastNotify = 0
 local function showGameResults()
     if os.time() - lastNotify < 4 then return end
@@ -209,6 +246,7 @@ local function showGameResults()
         task.wait(2)
         local rw = LocalPlayer:FindFirstChild("RewardsShow")
         if not rw then return end
+
         local kids = rw:GetChildren()
         if #kids == 0 then
             Fluent:Notify({ Title = "Game Ended", Content = "No rewards detected", Duration = 3 })
@@ -216,23 +254,21 @@ local function showGameResults()
             return
         end
 
-        local lines = {"Game Ended", "REWARDS:"}
-        local webhookLines = {}
-        for _, it in ipairs(kids) do
-            local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
-            local now = getPlayerItemAmount(it.Name)
-            local line = ("[ %dx ] %s  [Now: %dx]"):format(amt, it.Name, now)
-            table.insert(lines, line)
-            table.insert(webhookLines, line)
+        local lines = {}
+        for _, item in ipairs(kids) do
+            local amt = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, getPlayerItemAmount(item.Name)))
         end
 
-        Fluent:Notify({ Title = "Game Results", Content = table.concat(lines, "\n"), Duration = 6 })
-        sendWebhook(table.concat(webhookLines, "\n"))
+        local resultText = table.concat(lines, "\n")
+        Fluent:Notify({ Title = "Game Results", Content = resultText, Duration = 6 })
+
+        sendWebhook(resultText)
         lastNotify = os.time()
     end)
 end
 
--- Hook into GameEnded UI
+--// Auto Detect Game End
 task.spawn(function()
     while task.wait(0.5) do
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
