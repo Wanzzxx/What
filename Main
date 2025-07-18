@@ -190,16 +190,28 @@ Options.ActiveWebhook = Tabs.Webhook:AddToggle("ActiveWebhookToggle", {
     end
 })
 
---// Helper: Get Item Amount
+--// Helper: Get Item Amount (Check Items and Data folders)
 local function getPlayerItemAmount(name)
     local data = ReplicatedStorage:FindFirstChild("Player_Data")
     local folder = data and data:FindFirstChild(LocalPlayer.Name)
-    if folder and folder:FindFirstChild("Items") then
+    if not folder then return 0 end
+
+    -- Check Items folder
+    if folder:FindFirstChild("Items") then
         local item = folder.Items:FindFirstChild(name)
         if item and item:FindFirstChild("Amount") then
             return item.Amount.Value
         end
     end
+
+    -- Fallback: Check Data folder directly
+    if folder:FindFirstChild("Data") then
+        local item = folder.Data:FindFirstChild(name)
+        if item and item:IsA("NumberValue") then
+            return item.Value
+        end
+    end
+
     return 0
 end
 
@@ -211,9 +223,9 @@ local function sendWebhook(results)
 
     local placeName = MarketplaceService:GetProductInfo(game.PlaceId).Name
     local data = {
-        username = "Game Results",
+        username = "WanzHook",
         embeds = {{
-            title = "Rewards:",
+            title = "Results:",
             fields = {
                 { name = "Username", value = LocalPlayer.Name, inline = true },
                 { name = "UserID", value = tostring(LocalPlayer.UserId), inline = true },
@@ -257,11 +269,12 @@ local function showGameResults()
         local lines = {}
         for _, item in ipairs(kids) do
             local amt = item:IsA("NumberValue") and item.Value or ((item:FindFirstChild("Amount") and item.Amount.Value) or 1)
-            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, getPlayerItemAmount(item.Name)))
+            local nowAmt = getPlayerItemAmount(item.Name)
+            table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amt, item.Name, nowAmt))
         end
 
         local resultText = table.concat(lines, "\n")
-        Fluent:Notify({ Title = "Game Results", Content = resultText, Duration = 6 })
+        Fluent:Notify({ Title = "Results Notify", Content = resultText, Duration = 6 })
 
         sendWebhook(resultText)
         lastNotify = os.time()
