@@ -132,6 +132,118 @@ local buyActive = false
 
 -- Toggle
 
+--// Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Input + Toggle
+Options.WebhookInput = Tabs.Webhook:AddInput("PasteWebhook", {
+    Title = "Paste Your Webhook",
+    Default = "",
+    Placeholder = "https://discord.com/api/webhooks/...",
+    Numeric = false,
+    Finished = true,
+    Callback = function(Value)
+        print("Webhook set to:", Value)
+    end
+})
+
+Options.WebhookToggle = Tabs.Webhook:AddToggle("ActiveWebhook", {
+    Title = "Active Webhook",
+    Default = false,
+    Callback = function(v)
+        print("Webhook Enabled:", v)
+    end
+})
+
+-- Get current item amount in inventory
+local function getPlayerItemAmount(name)
+    local d = ReplicatedStorage:FindFirstChild("Player_Data")
+    if not d then return 0 end
+    local folder = d:FindFirstChild(LocalPlayer.Name)
+    if folder and folder:FindFirstChild("Items") then
+        local i = folder.Items:FindFirstChild(name)
+        if i and i:FindFirstChild("Amount") then
+            return i.Amount.Value
+        end
+    end
+    return 0
+end
+
+-- Send data to webhook
+local function sendWebhook(content)
+    local webhook = Options.WebhookInput and Options.WebhookInput.Value
+    local isEnabled = Options.WebhookToggle and Options.WebhookToggle.Value
+
+    if not isEnabled or not webhook or not webhook:find("^https://discord.com/api/webhooks/") then
+        warn("❌ Webhook not enabled or invalid.")
+        return
+    end
+
+    local payload = {
+        content = string.format("**Game Results:**\n**Rewards:**\n%s", content)
+    }
+
+    local json = HttpService:JSONEncode(payload)
+
+    local req = syn and syn.request or http_request or request or (fluxus and fluxus.request) or (getgenv and getgenv().request)
+    if req then
+        req({
+            Url = webhook,
+            Method = "POST",
+            Headers = { ["Content-Type"] = "application/json" },
+            Body = json
+        })
+    else
+        warn("❌ No supported HTTP request method found.")
+    end
+end
+
+-- Show in-game + send webhook
+local lastNotify = 0
+local function showGameResults()
+    if os.time() - lastNotify < 4 then return end
+    task.spawn(function()
+        task.wait(2)
+        local rw = LocalPlayer:FindFirstChild("RewardsShow")
+        if not rw then return end
+        local kids = rw:GetChildren()
+        if #kids == 0 then
+            Fluent:Notify({ Title = "Game Ended", Content = "No rewards detected", Duration = 3 })
+            lastNotify = os.time()
+            return
+        end
+
+        local lines = {"Game Ended", "REWARDS:"}
+        local webhookLines = {}
+        for _, it in ipairs(kids) do
+            local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
+            local now = getPlayerItemAmount(it.Name)
+            local line = ("[ %dx ] %s  [Now: %dx]"):format(amt, it.Name, now)
+            table.insert(lines, line)
+            table.insert(webhookLines, line)
+        end
+
+        Fluent:Notify({ Title = "Game Results", Content = table.concat(lines, "\n"), Duration = 6 })
+        sendWebhook(table.concat(webhookLines, "\n"))
+        lastNotify = os.time()
+    end)
+end
+
+-- Hook into GameEnded UI
+task.spawn(function()
+    while task.wait(0.5) do
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        if pg and pg:FindFirstChild("GameEndedAnimationUI") then
+            showGameResults()
+            repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
+        end
+    end
+end)
+
+
 local selectedSpeed = 1
 local loopActive = true
 
@@ -778,129 +890,6 @@ Options.AutoStart:OnChanged(function(state)
         end
     end)
 end)
-
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Store webhook URL and toggle state
-local webhookURL = ""
-local webhookActive = false
-
--- Input box for webhook
-Options.WebhookInput = Tabs.Webhook:AddInput("WebhookInput", {
-    Title = "Paste Your Webhook",
-    Default = "",
-    Placeholder = "https://discord.com/api/webhooks/...",
-    Numeric = false,
-    Finished = true,
-    Callback = function(Value)
-        webhookURL = Value
-        Fluent:Notify({Title = "Webhook Set", Content = "Webhook saved successfully.", Duration = 3})
-    end
-})
-
--- Toggle for enabling webhook
-Options.WebhookToggle = Tabs.Webhook:AddToggle("WebhookToggle", {
-    Title = "Active Webhook",
-    Default = false
-})
-Options.WebhookToggle:OnChanged(function(v)
-    webhookActive = v
-    Fluent:Notify({
-        Title = "Webhook",
-        Content = v and "Webhook is now active!" or "Webhook is disabled.",
-        Duration = 3
-    })
-end)
-
--- Helper: Get Player Item Amount
-local function getPlayerItemAmount(name)
-	local d = ReplicatedStorage:FindFirstChild("Player_Data")
-	if not d then return 0 end
-	local folder = d:FindFirstChild(LocalPlayer.Name)
-	if folder and folder:FindFirstChild("Items") then
-		local i = folder.Items:FindFirstChild(name)
-		if i and i:FindFirstChild("Amount") then return i.Amount.Value end
-	end
-	return 0
-end
-
--- Show Game Results + Webhook
-local lastNotify = 0
-local function showGameResults()
-	if os.time() - lastNotify < 3 then return end
-	lastNotify = os.time()
-
-	local rewardList = {}
-	local rewardFolder = LocalPlayer:FindFirstChild("RewardsShow")
-	if rewardFolder then
-		for _, it in ipairs(rewardFolder:GetChildren()) do
-			local name = it.Name
-			local amt = it:IsA("NumberValue") and it.Value or ((it:FindFirstChild("Amount") and it.Amount.Value) or 1)
-			local now = getPlayerItemAmount(name)
-			table.insert(rewardList, {name = name, amount = amt, now = now})
-		end
-	end
-
-	task.spawn(function()
-		task.wait(0.5)
-		if #rewardList == 0 then
-			Fluent:Notify({Title = "Game Ended", Content = "No rewards detected", Duration = 3})
-			return
-		end
-
-		local lines = {"Game Ended", "REWARDS:"}
-		for _, reward in ipairs(rewardList) do
-			table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(reward.amount, reward.name, reward.now))
-		end
-
-		Fluent:Notify({
-			Title = "Game Results",
-			Content = table.concat(lines, "\n"),
-			Duration = 6
-		})
-
-		if webhookActive and webhookURL:match("^https://discord.com/api/webhooks/") then
-			local embed = {
-				["title"] = "Game Results",
-				["description"] = table.concat(lines, "\n"),
-				["color"] = 0x88ff88,
-				["footer"] = {
-					["text"] = "Player: " .. LocalPlayer.Name .. " • " .. os.date("%Y-%m-%d %H:%M:%S")
-				}
-			}
-			local payload = HttpService:JSONEncode({content = "", embeds = {embed}})
-
-			local req = syn and syn.request or http_request or request or fluxus and fluxus.request
-			if req then
-				pcall(function()
-					req({
-						Url = webhookURL,
-						Method = "POST",
-						Headers = {["Content-Type"] = "application/json"},
-						Body = payload
-					})
-				end)
-			end
-		end
-	end)
-end
-
--- Monitor GameEnd UI
-task.spawn(function()
-	while true do
-		task.wait(0.25)
-		local gui = LocalPlayer:FindFirstChild("PlayerGui")
-		local endUI = gui and gui:FindFirstChild("GameEndedAnimationUI")
-		if endUI then
-			showGameResults()
-			repeat task.wait(1) until not gui:FindFirstChild("GameEndedAnimationUI")
-		end
-	end
-end)
-
 
 -- Stats ui
 function createStatsUI()
