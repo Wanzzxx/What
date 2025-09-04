@@ -708,16 +708,14 @@ Options.VoteNext = Tabs.Main:AddToggle("VoteNext", {
 Options.VoteNext:OnChanged(function(v)
     votingActive.Next = v
     if v then
-        Options.VoteRetry:SetValue(false) -- disable Retry if Next is chosen
+        Options.VoteRetry:SetValue(false)
         Fluent:Notify({
             Title = "Vote",
             Content = "Auto-voting for Next map",
             Duration = 3
         })
-        print("[DEBUG] VoteNext enabled")
     else
         votingActive.Next = false
-        print("[DEBUG] VoteNext disabled")
     end
 end)
 
@@ -730,16 +728,14 @@ Options.VoteRetry = Tabs.Main:AddToggle("VoteRetry", {
 Options.VoteRetry:OnChanged(function(v)
     votingActive.Retry = v
     if v then
-        Options.VoteNext:SetValue(false) -- disable Next if Retry is chosen
+        Options.VoteNext:SetValue(false)
         Fluent:Notify({
             Title = "Vote",
             Content = "Auto-voting for Retry map",
             Duration = 3
         })
-        print("[DEBUG] VoteRetry enabled")
     else
         votingActive.Retry = false
-        print("[DEBUG] VoteRetry disabled")
     end
 end)
 
@@ -753,7 +749,11 @@ task.spawn(function()
             local pg = LocalPlayer:FindFirstChild("PlayerGui")
 
             if pg and pg:FindFirstChild("GameEndedAnimationUI") then
-                print("[DEBUG] GameEndedAnimationUI detected, starting vote loop...")
+                -- Wait 1 second to confirm UI still exists
+                task.wait(1)
+                if not pg:FindFirstChild("GameEndedAnimationUI") then
+                    continue
+                end
 
                 -- Notify once per game end
                 if votingActive.Next then
@@ -774,15 +774,11 @@ task.spawn(function()
                 repeat
                     if votingActive.Next then
                         RS.Remote.Server.OnGame.Voting.VoteNext:FireServer()
-                        print("[DEBUG] Sent VoteNext")
                     elseif votingActive.Retry then
                         RS.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
-                        print("[DEBUG] Sent VoteRetry")
                     end
                     task.wait(2)
                 until not (pg:FindFirstChild("GameEndedAnimationUI") and (votingActive.Next or votingActive.Retry))
-
-                print("[DEBUG] GameEndedAnimationUI gone, vote loop stopped.")
             end
         end
     end
