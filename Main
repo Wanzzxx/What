@@ -120,7 +120,7 @@ local Tabs = {
     Joiner = Window:AddTab({ Title = "Auto Join", Icon = "users" }),
     Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
     Webhook = Window:AddTab({ Title = "Webhook", Icon = "globe" }),
-    Misc = Window:AddTab({ Title = "Menu Tambahan", Icon = "layers" }),
+    Misc = Window:AddTab({ Title = "Misc", Icon = "layers" }),
     Settings = Window:AddTab({ Title = "Pengaturan", Icon = "settings" })
 }
 
