@@ -395,7 +395,51 @@ do
     end)
 end
 
+-- Dropdown for dungeon difficulty
+Options.DungeonDifficulty = Tabs.Joiner:AddDropdown("DungeonDifficulty", {
+    Title = "Dungeon Difficulty",
+    Values = {"Easy", "Normal", "Hell"},
+    Default = "Normal"
+})
 
+-- Toggle for Auto Join Dungeon
+Options.AutoJoinDungeon = Tabs.Joiner:AddToggle("AutoJoinDungeon", {
+    Title = "Auto Join Dungeon",
+    Default = false
+})
+
+Options.AutoJoinDungeon:OnChanged(function(enabled)
+    if not enabled then return end
+
+    task.spawn(function()
+        while Options.AutoJoinDungeon.Value and not Fluent.Unloaded do
+            if workspace:FindFirstChild("Lobby") then
+                local difficulty = Options.DungeonDifficulty.Value or "Normal"
+
+                local args = {
+                    [1] = "Dungeon",
+                    [2] = { ["Difficulty"] = difficulty }
+                }
+
+                game:GetService("ReplicatedStorage")
+                    :WaitForChild("Remote")
+                    :WaitForChild("Server")
+                    :WaitForChild("PlayRoom")
+                    :WaitForChild("Event")
+                    :FireServer(unpack(args))
+
+                Fluent:Notify({
+                    Title = "Auto Join Dungeon",
+                    Content = "Joined Dungeon (" .. difficulty .. ")",
+                    Duration = 3
+                })
+
+                break -- only trigger once per activation
+            end
+            task.wait(2)
+        end
+    end)
+end)
 
 -- Auto Join Fall Event
 Options.AutoJoinFallEvent = Tabs.Joiner:AddToggle("AutoJoinFallEvent", {
