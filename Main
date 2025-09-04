@@ -115,13 +115,12 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-
 local Tabs = {
-    Main = Window:AddTab({ Title = "Menu", Icon = "" }),
-    Joiner = Window:AddTab ({ Title = "Auto Join", Icon = "" }),
-    Shop = Window:AddTab ({ Title = "Shop", Icon = "" }),
-    Webhook = Window:AddTab ({ Title = "Webhook", Icon = "" }),
-    Misc = Window:AddTab({ Title = "Menu Tambahan", Icon = "settings" }),
+    Main = Window:AddTab({ Title = "Menu", Icon = "home" }),
+    Joiner = Window:AddTab({ Title = "Auto Join", Icon = "users" }),
+    Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
+    Webhook = Window:AddTab({ Title = "Webhook", Icon = "globe" }),
+    Misc = Window:AddTab({ Title = "Menu Tambahan", Icon = "layers" }),
     Settings = Window:AddTab({ Title = "Pengaturan", Icon = "settings" })
 }
 
