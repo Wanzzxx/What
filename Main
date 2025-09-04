@@ -118,7 +118,6 @@ end)
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Menu", Icon = "" }),
-    Auto = Window:AddTab({ Title = "Automatically", Icon = "" }),
     Joiner = Window:AddTab ({ Title = "Auto Join", Icon = "" }),
     Shop = Window:AddTab ({ Title = "Shop", Icon = "" }),
     Webhook = Window:AddTab ({ Title = "Webhook", Icon = "" }),
@@ -396,66 +395,6 @@ do
     end)
 end
 
-Options.AutoBossRush = Tabs.Auto:AddToggle("AutoBossRush", {
-    Title = "Auto Boss Rush [Delta Seraph/Capitalist Needed]",
-    Default = false
-})
-
-Options.AutoBossRush:OnChanged(function(enabled)
-    if not enabled then return end
-
-    task.spawn(function()
-        if workspace:FindFirstChild("Lobby") then return end
-
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local Players = game:GetService("Players")
-        local LocalPlayer = Players.LocalPlayer
-        local Remotes = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Units")
-
-        local function getDeltaCollection()
-            local pd = ReplicatedStorage:WaitForChild("Player_Data")
-            local folder = pd:FindFirstChild(LocalPlayer.Name) or pd:FindFirstChild(tostring(LocalPlayer.UserId))
-            if not folder then return nil end
-            local success, collection = pcall(function()
-                return folder:WaitForChild("Collection"):WaitForChild("Delta")
-            end)
-            if not success or not collection then return nil end
-            return collection
-        end
-
-        local function upgradeDelta()
-            local unitFolder = LocalPlayer:FindFirstChild("UnitsFolder")
-            if not unitFolder then return end
-            local unit = unitFolder:FindFirstChild("Delta")
-            if not unit then return end
-            for i = 1, 5 do
-                Remotes.Upgrade:FireServer(unit)
-                task.wait(0.2)
-            end
-        end
-
-        local deltaCollection = getDeltaCollection()
-        if not deltaCollection then return end
-
-        local pathOrder = {1, 2, 3, 4}
-
-        task.wait(18)
-
-        while Options.AutoBossRush.Value and not Fluent.Unloaded do
-            for _, pathId in ipairs(pathOrder) do
-                if not Options.AutoBossRush.Value then break end
-                upgradeDelta()
-                task.wait(1)
-                Remotes.SelectWay:FireServer(pathId)
-                task.wait(0.5)
-                Remotes.Deployment:FireServer(deltaCollection)
-                task.wait(3.4)
-            end
-        end
-    end)
-end)
-
-
 Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
     Title = "Auto Join Boss Rush",
     Default = false
@@ -493,100 +432,6 @@ Options.AutoJoinBossRush:OnChanged(function(enabled)
             task.wait(2)
         end
     end)
-end)
-
-Options.AutoBossAttack = Tabs.Joiner:AddToggle("AutoBossAttack", {
-    Title   = "Auto Boss Attack",
-    Default = false
-})
-
-Options.AutoBossAttack:OnChanged(function(v)
-    if not v then return end
-
-    task.spawn(function()
-        while Options.AutoBossAttack.Value do
-            local Players            = game:GetService("Players")
-            local ReplicatedStorage  = game:GetService("ReplicatedStorage")
-            local LocalPlayer        = Players.LocalPlayer
-            local PlayerGui          = LocalPlayer:FindFirstChild("PlayerGui")
-            local bossUI             = PlayerGui and PlayerGui:FindFirstChild("BossAttack")
-
-            -- Force‑open UI every loop
-            if bossUI then
-                bossUI.Enabled = true
-            end
-
-            -- Wait 3 s before using the displayed ticket text
-            task.wait(3)
-
-            local ticketLabel = bossUI
-                and bossUI:FindFirstChild("Main")
-                and bossUI.Main:FindFirstChild("PlayerCurrency")
-                and bossUI.Main.PlayerCurrency:FindFirstChild("TicketLeft")
-
-            if ticketLabel and ticketLabel:IsA("TextLabel") then
-                local ticketText  = ticketLabel.Text         -- e.g. "TICKET LEFT: 3"
-                local ticketCount = tonumber(ticketText:match("%d+"))
-
-                -- Notify user
-                Fluent:Notify({
-                    Title    = "Boss Ticket",
-                    Content  = "Your ticket is " .. ticketText,
-                    Duration = 5
-                })
-
-                -- Auto‑join only when a Lobby exists
-                if ticketCount == 3 and workspace:FindFirstChild("Lobby") then
-                    ReplicatedStorage.Remote.Server.PlayRoom.Event:FireServer("Boss-Attack")
-
-                -- Always auto‑leave at 0, regardless of Lobby / VoteRetry toggle
-                elseif ticketCount == 0 then
-                    ReplicatedStorage.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
-                end
-            end
-
-            task.wait(10) -- Repeat every 10 s while toggle is ON
-        end
-    end)
-end)
-
-
--- Auto Join Summer Event
-Options.AutoJoinSummer = Tabs.Joiner:AddToggle("AutoJoinSummer", {
-    Title = "Auto Join Summer Event",
-    Default = false
-})
-
-Options.AutoJoinSummer:OnChanged(function(enabled)
-    if enabled then
-        Fluent:Notify({
-            Title = "Summer Event",
-            Content = "Waiting for Lobby...",
-            Duration = 4
-        })
-
-        task.spawn(function()
-            local RS = game:GetService("ReplicatedStorage")
-            while Options.AutoJoinSummer.Value and not Fluent.Unloaded do
-                if workspace:FindFirstChild("Lobby") then
-                    local success, err = pcall(function()
-                        local args = { [1] = "Summer-Event" }
-                        RS:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event"):FireServer(unpack(args))
-                        Fluent:Notify({
-                            Title = "Summer Event",
-                            Content = "Joined Summer Event!",
-                            Duration = 4
-                        })
-                    end)
-
-                    if success then break end
-                end
-                task.wait(2)
-            end
-        end)
-    else
-        Fluent:Notify({ Title = "Summer Event", Content = "Auto join disabled", Duration = 3 })
-    end
 end)
 
 Options.AutoJoinChallenge = Tabs.Joiner:AddToggle("AutoJoinChallenge", {
@@ -833,59 +678,6 @@ Options.VoteRetry:OnChanged(function(v)
             end
         end)
         Options.VoteNext:SetValue(false)
-    end
-end)
-
-Options.SimpleAntiLag = Tabs.Misc:AddToggle("SimpleAntiLag", {
-    Title = "Simple Anti-Lag",
-    Default = false,
-})
-
-Options.SimpleAntiLag:OnChanged(function(state)
-    if not state then
-        Fluent:Notify({
-            Title = "Simple Anti-Lag",
-            Content = "Disabled (no changes reverted)",
-            Duration = 3
-        })
-        return
-    end
-
-    Fluent:Notify({
-        Title = "Simple Anti-Lag",
-        Content = "Applying optimizations...",
-        Duration = 4
-    })
-
-    local targetSettings = {
-        ["Abilities VFX"] = false,
-        ["Hide Cosmetic"] = true,
-        ["Display Players Units"] = false,
-        ["Cutscene Disabled"] = true,
-        ["Low Graphic Quality"] = true,
-        ["HeadBar"] = false
-    }
-
-    local RS = game:GetService("ReplicatedStorage")
-    local SettingFolder = RS:FindFirstChild("Player_Settings") or RS:WaitForChild("Player_Settings")
-    local PlayerSettings = SettingFolder and SettingFolder:FindFirstChild(game.Players.LocalPlayer.Name)
-
-    for settingName, targetValue in pairs(targetSettings) do
-        task.spawn(function()
-            local currentSetting = nil
-            if PlayerSettings then
-                local settingObj = PlayerSettings:FindFirstChild(settingName)
-                if settingObj and settingObj:IsA("BoolValue") then
-                    currentSetting = settingObj.Value
-                end
-            end
-
-            -- Fire server only if value is different
-            if currentSetting ~= targetValue then
-                local args = { [1] = settingName, [2] = targetValue }
-                RS.Remote.Server.Settings.Setting_Event:FireServer(unpack(args))
-            end
-        end)
     end
 end)
 
