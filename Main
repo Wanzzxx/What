@@ -867,6 +867,17 @@ Options.AutoStart:OnChanged(function(state)
     end)
 end)
 
+-- Play sound on script execution
+task.spawn(function()
+    local SoundService = game:GetService("SoundService")
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://138545624185373"
+    sound.Volume = 3
+    sound.Looped = false
+    sound.Parent = SoundService
+    sound:Play()
+end)
+
 -- Save
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
