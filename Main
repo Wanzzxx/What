@@ -698,35 +698,66 @@ end)
 
 
 -- Vote Toggles
-Options.VoteNext = Tabs.Main:AddToggle("VoteNext", { Title = "Vote Next", Default = false })
+
+-- Vote Next
+Options.VoteNext = Tabs.Main:AddToggle("VoteNext", {
+    Title = "Vote Next",
+    Default = false
+})
+
 Options.VoteNext:OnChanged(function(v)
     votingActive.Next = v
     if v then
-        Fluent:Notify({ Title = "Vote", Content = "Voted for Next Map", Duration = 3 })
-        task.spawn(function()
-            while votingActive.Next do
-                game:GetService("ReplicatedStorage").Remote.Server.OnGame.Voting.VoteNext:FireServer()
-                task.wait(1)
-            end
-        end)
-        Options.VoteRetry:SetValue(false)
+        Options.VoteRetry:SetValue(false) -- disable Retry if Next is chosen
+        Fluent:Notify({ Title = "Vote", Content = "Auto-voting for Next map", Duration = 3 })
+    else
+        votingActive.Next = false
     end
 end)
 
-Options.VoteRetry = Tabs.Main:AddToggle("VoteRetry", { Title = "Vote Retry", Default = false })
+-- Vote Retry
+Options.VoteRetry = Tabs.Main:AddToggle("VoteRetry", {
+    Title = "Vote Retry",
+    Default = false
+})
+
 Options.VoteRetry:OnChanged(function(v)
     votingActive.Retry = v
     if v then
-        Fluent:Notify({ Title = "Vote", Content = "Voted to Retry Map", Duration = 3 })
-        task.spawn(function()
-            while votingActive.Retry do
-                game:GetService("ReplicatedStorage").Remote.Server.OnGame.Voting.VoteRetry:FireServer()
-                task.wait(1)
-            end
-        end)
-        Options.VoteNext:SetValue(false)
+        Options.VoteNext:SetValue(false) -- disable Next if Retry is chosen
+        Fluent:Notify({ Title = "Vote", Content = "Auto-voting for Retry map", Duration = 3 })
+    else
+        votingActive.Retry = false
     end
 end)
+
+-- Auto vote handler (runs in background)
+task.spawn(function()
+    local RS = game:GetService("ReplicatedStorage")
+    local LocalPlayer = game:GetService("Players").LocalPlayer
+
+    while task.wait(1) do
+        if (votingActive.Next or votingActive.Retry) and not workspace:FindFirstChild("Lobby") then
+            local pg = LocalPlayer:FindFirstChild("PlayerGui")
+
+            if pg and pg:FindFirstChild("GameEndedAnimationUI") then
+                repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
+
+                -- Double-check still not in Lobby
+                if not workspace:FindFirstChild("Lobby") then
+                    if votingActive.Next then
+                        RS.Remote.Server.OnGame.Voting.VoteNext:FireServer()
+                        Fluent:Notify({ Title = "Vote", Content = "Voted Next map", Duration = 3 })
+                    elseif votingActive.Retry then
+                        RS.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
+                        Fluent:Notify({ Title = "Vote", Content = "Voted Retry map", Duration = 3 })
+                    end
+                end
+            end
+        end
+    end
+end)
+
 
 Options.AutoStart = Tabs.Main:AddToggle("AutoStart", {
     Title = "Auto Start",
