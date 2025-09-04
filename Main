@@ -729,7 +729,46 @@ Options.AutoBuyRaidShop:OnChanged(function(enabled)
     end
 end)
 
+-- Toggle: Remove Texture
+Options.RemoveTexture = Tabs.Misc:AddToggle("RemoveTexture", {
+    Title = "Remove Texture",
+    Default = false
+})
 
+Options.RemoveTexture:OnChanged(function(state)
+    if not state then return end
+
+    -- Function to wipe textures
+    local function clearTextures(obj)
+        if obj:IsA("Decal") or obj:IsA("Texture") then
+            obj:Destroy()
+        elseif obj:IsA("SurfaceAppearance") then
+            obj:Destroy()
+        elseif obj:IsA("MeshPart") then
+            obj.TextureID = ""
+        elseif obj:IsA("SpecialMesh") then
+            obj.TextureId = ""
+        end
+    end
+
+    -- Initial clear
+    for _, obj in pairs(game:GetDescendants()) do
+        clearTextures(obj)
+    end
+
+    -- Keep clearing new ones
+    game.DescendantAdded:Connect(function(obj)
+        if Options.RemoveTexture.Value then
+            clearTextures(obj)
+        end
+    end)
+
+    Fluent:Notify({
+        Title = "Remove Texture",
+        Content = "All textures have been removed.",
+        Duration = 3
+    })
+end)
 
 -- Vote Toggles
 
