@@ -394,6 +394,11 @@ do
     end)
 end
 
+Tabs.Main:AddParagraph({
+    Title = "Dungeon",
+    Content = ""
+})
+
 -- Dropdown for dungeon difficulty
 Options.DungeonDifficulty = Tabs.Joiner:AddDropdown("DungeonDifficulty", {
     Title = "Dungeon Difficulty",
@@ -440,6 +445,11 @@ Options.AutoJoinDungeon:OnChanged(function(enabled)
     end)
 end)
 
+Tabs.Main:AddParagraph({
+    Title = "Event",
+    Content = ""
+})
+
 -- Auto Join Fall Event
 Options.AutoJoinFallEvent = Tabs.Joiner:AddToggle("AutoJoinFallEvent", {
     Title = "Auto Join Fall Event",
@@ -475,6 +485,11 @@ Options.AutoJoinFallEvent:OnChanged(function(enabled)
         end
     end)
 end)
+
+Tabs.Main:AddParagraph({
+    Title = "Others",
+    Content = ""
+})
 
 Options.AutoJoinBossRush = Tabs.Joiner:AddToggle("AutoJoinBossRush", {
     Title = "Auto Join Boss Rush",
@@ -733,7 +748,7 @@ end)
 
 Tabs.Main:AddParagraph({
     Title = "Vote Menu",
-    Content = "Wanz Hub Loaded!\nMade with Fluent UI."
+    Content = ""
 })
 
 -- Vote Next
