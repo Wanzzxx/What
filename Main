@@ -394,7 +394,7 @@ do
     end)
 end
 
-Tabs.Main:AddParagraph({
+Tabs.Joiner:AddParagraph({
     Title = "Dungeon",
     Content = ""
 })
@@ -445,7 +445,7 @@ Options.AutoJoinDungeon:OnChanged(function(enabled)
     end)
 end)
 
-Tabs.Main:AddParagraph({
+Tabs.Joiner:AddParagraph({
     Title = "Event",
     Content = ""
 })
@@ -486,7 +486,7 @@ Options.AutoJoinFallEvent:OnChanged(function(enabled)
     end)
 end)
 
-Tabs.Main:AddParagraph({
+Tabs.Joiner:AddParagraph({
     Title = "Others",
     Content = ""
 })
