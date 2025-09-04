@@ -731,6 +731,11 @@ end)
 
 -- Vote Toggles
 
+Tabs.Main:AddParagraph({
+    Title = "Vote Menu",
+    Content = "Wanz Hub Loaded!\nMade with Fluent UI."
+})
+
 -- Vote Next
 Options.VoteNext = Tabs.Main:AddToggle("VoteNext", {
     Title = "Vote Next",
