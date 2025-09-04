@@ -837,27 +837,6 @@ Options.AutoStart:OnChanged(function(state)
     end)
 end)
 
--- Function
-task.spawn(function()
-    local Plr = game:GetService("Players").LocalPlayer
-    while true do
-        task.wait(2)
-
-        -- Run in-game only
-        if (Options.VoteNext.Value or Options.VoteRetry.Value)
-            and not workspace:FindFirstChild("Lobby") then
-
-            local pg = Plr:FindFirstChild("PlayerGui")
-            if pg and pg:FindFirstChild("GameEndedAnimationUI") then
-                pg.GameEndedAnimationUI:Destroy()
-            end
-
-            local summon = Plr:FindFirstChild("Summon_Amount")
-            if summon then summon:Destroy() end
-        end
-    end
-end)
-
 -- Save
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
