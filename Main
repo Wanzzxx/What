@@ -739,24 +739,30 @@ task.spawn(function()
     while task.wait(1) do
         if (votingActive.Next or votingActive.Retry) and not workspace:FindFirstChild("Lobby") then
             local pg = LocalPlayer:FindFirstChild("PlayerGui")
+            local gameEndedUI = pg and pg:FindFirstChild("GameEndedAnimationUI")
 
-            if pg and pg:FindFirstChild("GameEndedAnimationUI") then
-                repeat task.wait(1) until not pg:FindFirstChild("GameEndedAnimationUI")
-
-                -- Double-check still not in Lobby
-                if not workspace:FindFirstChild("Lobby") then
+            if gameEndedUI then
+                -- Keep looping while GameEndedAnimationUI exists
+                repeat
                     if votingActive.Next then
                         RS.Remote.Server.OnGame.Voting.VoteNext:FireServer()
-                        Fluent:Notify({ Title = "Vote", Content = "Voted Next map", Duration = 3 })
                     elseif votingActive.Retry then
                         RS.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
-                        Fluent:Notify({ Title = "Vote", Content = "Voted Retry map", Duration = 3 })
                     end
-                end
+                    task.wait(2) -- retry every 2 seconds
+                until not gameEndedUI.Parent or not (votingActive.Next or votingActive.Retry)
+
+                -- Notify once when UI disappears
+                Fluent:Notify({
+                    Title = "Vote",
+                    Content = "Continuing...",
+                    Duration = 3
+                })
             end
         end
     end
 end)
+
 
 
 Options.AutoStart = Tabs.Main:AddToggle("AutoStart", {
