@@ -709,9 +709,15 @@ Options.VoteNext:OnChanged(function(v)
     votingActive.Next = v
     if v then
         Options.VoteRetry:SetValue(false) -- disable Retry if Next is chosen
-        Fluent:Notify({ Title = "Vote", Content = "Auto-voting for Next map", Duration = 3 })
+        Fluent:Notify({
+            Title = "Vote",
+            Content = "Auto-voting for Next map",
+            Duration = 3
+        })
+        print("[DEBUG] VoteNext enabled")
     else
         votingActive.Next = false
+        print("[DEBUG] VoteNext disabled")
     end
 end)
 
@@ -725,9 +731,15 @@ Options.VoteRetry:OnChanged(function(v)
     votingActive.Retry = v
     if v then
         Options.VoteNext:SetValue(false) -- disable Next if Retry is chosen
-        Fluent:Notify({ Title = "Vote", Content = "Auto-voting for Retry map", Duration = 3 })
+        Fluent:Notify({
+            Title = "Vote",
+            Content = "Auto-voting for Retry map",
+            Duration = 3
+        })
+        print("[DEBUG] VoteRetry enabled")
     else
         votingActive.Retry = false
+        print("[DEBUG] VoteRetry disabled")
     end
 end)
 
@@ -739,30 +751,42 @@ task.spawn(function()
     while task.wait(1) do
         if (votingActive.Next or votingActive.Retry) and not workspace:FindFirstChild("Lobby") then
             local pg = LocalPlayer:FindFirstChild("PlayerGui")
-            local gameEndedUI = pg and pg:FindFirstChild("GameEndedAnimationUI")
 
-            if gameEndedUI then
-                -- Keep looping while GameEndedAnimationUI exists
+            if pg and pg:FindFirstChild("GameEndedAnimationUI") then
+                print("[DEBUG] GameEndedAnimationUI detected, starting vote loop...")
+
+                -- Notify once per game end
+                if votingActive.Next then
+                    Fluent:Notify({
+                        Title = "Vote",
+                        Content = "Auto-voting Next...",
+                        Duration = 3
+                    })
+                elseif votingActive.Retry then
+                    Fluent:Notify({
+                        Title = "Vote",
+                        Content = "Auto-voting Retry...",
+                        Duration = 3
+                    })
+                end
+
+                -- Keep voting until UI disappears
                 repeat
                     if votingActive.Next then
                         RS.Remote.Server.OnGame.Voting.VoteNext:FireServer()
+                        print("[DEBUG] Sent VoteNext")
                     elseif votingActive.Retry then
                         RS.Remote.Server.OnGame.Voting.VoteRetry:FireServer()
+                        print("[DEBUG] Sent VoteRetry")
                     end
-                    task.wait(2) -- retry every 2 seconds
-                until not gameEndedUI.Parent or not (votingActive.Next or votingActive.Retry)
+                    task.wait(2)
+                until not (pg:FindFirstChild("GameEndedAnimationUI") and (votingActive.Next or votingActive.Retry))
 
-                -- Notify once when UI disappears
-                Fluent:Notify({
-                    Title = "Vote",
-                    Content = "Continuing...",
-                    Duration = 3
-                })
+                print("[DEBUG] GameEndedAnimationUI gone, vote loop stopped.")
             end
         end
     end
 end)
-
 
 
 Options.AutoStart = Tabs.Main:AddToggle("AutoStart", {
