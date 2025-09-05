@@ -442,18 +442,15 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local Remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
 
-                -- Detect lobby folder
-                local LobbyFolder = ReplicatedStorage:FindFirstChild("PlayRoom") or workspace:FindFirstChild("PlayRoom")
-                local hasLobby = LobbyFolder and #LobbyFolder:GetChildren() > 0
-
-                if hasLobby then
+                -- Only run if workspace.Lobby exists
+                if workspace:FindFirstChild("Lobby") then
                     -- Step 2: Change Mode
                     Remote:FireServer("Change-Mode", {["Mode"] = "Raids Stage"})
 
                     -- Step 3: Change World
                     Remote:FireServer("Change-World", {["World"] = "TheGatedCity"})
 
-                    -- Step 4: Change Chapter
+                    -- Step 4: Change Chapter (from dropdown)
                     Remote:FireServer("Change-Chapter", {["Chapter"] = Options.GateRaidChapter.Value})
 
                     -- Step 5: Submit
@@ -462,13 +459,12 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
                     -- Step 6: Start
                     Remote:FireServer("Start")
                 else
-                    warn("[AutoJoinGateRaid] No lobby found, skipping...")
+                    warn("[AutoJoinGateRaid] No workspace.Lobby found, skipping...")
                 end
             end)
         end
     end
 })
-
 
 Tabs.Joiner:AddParagraph({
     Title = "- Dungeon -",
