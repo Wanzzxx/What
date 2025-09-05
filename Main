@@ -336,6 +336,105 @@ Options.GameSpeed:OnChanged(function(speedValue)
     end
 end)
 
+-- Add toggle into Misc tab
+Options.CleanEverything = Tabs.Misc:AddToggle("CleanEverything", {
+    Title = "Anti-Lag (Low Quality Mode)",
+    Default = false,
+})
+
+-- Function to run cleaner
+local function runCleaner()
+    if not workspace:FindFirstChild("Lobby") then
+        ------------------------
+        -- Cleaning Function
+        ------------------------
+        local function cleanObject(obj)
+            -- Force unlock if possible
+            pcall(function()
+                if obj.Locked ~= nil then
+                    obj.Locked = false
+                end
+            end)
+
+            -- Remove Textures
+            if obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
+                obj:Destroy()
+            end
+
+            -- Clear Mesh Textures
+            if obj:IsA("MeshPart") then
+                obj.TextureID = ""
+            elseif obj:IsA("SpecialMesh") then
+                obj.TextureId = ""
+            end
+
+            -- Remove Lighting Effects
+            if obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("BloomEffect") 
+                or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect")
+                or obj:IsA("SunRaysEffect") or obj:IsA("DepthOfFieldEffect") then
+                obj:Destroy()
+            end
+
+            -- Remove Models
+            if obj:IsA("Model") then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+
+        ------------------------
+        -- Initial Clean
+        ------------------------
+        for _, obj in pairs(game:GetDescendants()) do
+            cleanObject(obj)
+        end
+
+        ------------------------
+        -- Auto Clean New Objects
+        ------------------------
+        game.DescendantAdded:Connect(function(obj)
+            cleanObject(obj)
+        end)
+
+        ------------------------
+        -- Extra: Agent Folder Cleaner
+        ------------------------
+        local agentFolder = workspace:WaitForChild("Agent"):WaitForChild("Agent")
+
+        local function safeDestroy(obj)
+            if obj and obj:IsA("Model") then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+
+        for _, obj in ipairs(agentFolder:GetDescendants()) do
+            safeDestroy(obj)
+        end
+
+        agentFolder.DescendantAdded:Connect(function(desc)
+            safeDestroy(desc)
+        end)
+    end
+end
+
+-- Toggle handler
+Options.CleanEverything:OnChanged(function(state)
+    if state then
+        runCleaner()
+        Fluent:Notify({
+            Title = "Cleaner Activated",
+            Content = "Textures, Lighting, and Models are being removed.",
+            Duration = 5
+        })
+    else
+        Fluent:Notify({
+            Title = "Cleaner Disabled",
+            Content = "Cleanup stopped. New objects will no longer be removed.",
+            Duration = 5
+        })
+    end
+end)
+
+
 Options.PingFreezeRejoin = Tabs.Misc:AddToggle("PingFreezeRejoin", {
     Title = "Auto Rejoin When Ping Freeze/Stuck",
     Default = false
