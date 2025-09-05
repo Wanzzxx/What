@@ -417,6 +417,43 @@ end)
 -- Joiner
 
 Tabs.Joiner:AddParagraph({
+    Title = "- Raid -",
+    Content = ""
+})
+
+Options.AutoJoinGateRaid = Tabs.Joiner:AddDropdown("AutoJoinGateRaid", {
+    Title = "Auto Join Gate Raid",
+    Values = {"TheGatedCity_Chapter1", "TheGatedCity_Chapter2", "TheGatedCity_Chapter3", "TheGatedCity_Chapter4"},
+    Multi = true,
+    Default = {"TheGatedCity_Chapter1"},
+    Callback = function(selectedChapters)
+        task.spawn(function()
+            local Remote = game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
+
+            -- Step 1: Create
+            Remote:FireServer("Create")
+
+            -- Step 2: Change Mode
+            Remote:FireServer("Change-Mode", {["Mode"] = "Raids Stage"})
+
+            -- Step 3: Change World
+            Remote:FireServer("Change-World", {["World"] = "TheGatedCity"})
+
+            -- Step 4: Change Chapter(s)
+            for _, chapter in ipairs(selectedChapters) do
+                Remote:FireServer("Change-Chapter", {["Chapter"] = chapter})
+            end
+
+            -- Step 5: Submit
+            Remote:FireServer("Submit")
+
+            -- Step 6: Start
+            Remote:FireServer("Start")
+        end)
+    end
+})
+
+Tabs.Joiner:AddParagraph({
     Title = "- Dungeon -",
     Content = ""
 })
