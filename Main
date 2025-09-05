@@ -471,6 +471,54 @@ do
     end)
 end
 
+-- Toggle: Blackout Screen
+Options.BlackoutScreen = Tabs.Misc:AddToggle("BlackoutScreen", {
+    Title = "Full Black Background",
+    Default = false
+})
+
+Options.BlackoutScreen:OnChanged(function(state)
+    local player = game:GetService("Players").LocalPlayer
+    local playerGui = player:WaitForChild("PlayerGui")
+
+    if state then
+        -- Create Black Overlay
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "BlackoutGui"
+        gui.IgnoreGuiInset = true
+        gui.ResetOnSpawn = false
+        gui.Parent = playerGui
+
+        local frame = Instance.new("Frame")
+        frame.Name = "BlackFrame"
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.Position = UDim2.new(0, 0, 0, 0)
+        frame.BackgroundColor3 = Color3.new(0, 0, 0) -- black
+        frame.BorderSizePixel = 0
+        frame.ZIndex = 0 -- keep it behind GameEndedAnimationUI
+        frame.Parent = gui
+
+        Fluent:Notify({
+            Title = "Blackout",
+            Content = "Screen blacked out (Game End UI still visible).",
+            Duration = 3
+        })
+
+    else
+        -- Remove overlay if exists
+        local existing = playerGui:FindFirstChild("BlackoutGui")
+        if existing then
+            existing:Destroy()
+        end
+
+        Fluent:Notify({
+            Title = "Blackout",
+            Content = "Blackout disabled.",
+            Duration = 3
+        })
+    end
+end)
+
 -- Claim Quest
 Options.AutoClaimQuest = Tabs.Misc:AddToggle("AutoClaimQuest", {
     Title   = "Auto Claim All Quest",
