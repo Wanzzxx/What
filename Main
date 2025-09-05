@@ -444,8 +444,10 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
 
                 -- Only run if workspace.Lobby exists
                 if workspace:FindFirstChild("Lobby") then
+
                     -- Step 1: Create
                     Remote:FireServer("Create")
+
                     -- Step 2: Change Mode
                     Remote:FireServer("Change-Mode", {["Mode"] = "Raids Stage"})
 
