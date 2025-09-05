@@ -399,6 +399,9 @@ Tabs.Joiner:AddParagraph({
     Content = ""
 })
 
+para.TitleLabel.Font = Enum.Font.GothamBold
+para.ContentLabel.Font = Enum.Font.FredokaOne
+
 -- Dropdown for dungeon difficulty
 Options.DungeonDifficulty = Tabs.Joiner:AddDropdown("DungeonDifficulty", {
     Title = "Dungeon Difficulty",
