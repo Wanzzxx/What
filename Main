@@ -386,7 +386,7 @@ do
                 Duration = 3
             })
 
-            if heartbatConnection then
+            if heartbeatConnection then
                 heartbeatConnection:Disconnect()
                 heartbeatConnection = nil
             end
