@@ -394,13 +394,25 @@ do
     end)
 end
 
-Tabs.Joiner:AddParagraph({
+local para1 = Tabs.Joiner:AddParagraph({
     Title = "Dungeon",
     Content = ""
 })
 
-para.TitleLabel.Font = Enum.Font.GothamBold
-para.ContentLabel.Font = Enum.Font.FredokaOne
+-- Make only this paragraph text larger
+task.spawn(function()
+    -- wait until UI is built
+    task.wait(0.1)
+    local frame = para1.Instance
+    if frame then
+        local contentLabel = frame:FindFirstChildOfClass("TextLabel")
+        if contentLabel then
+            contentLabel.TextSize = 20 -- default ~14, make it bigger
+            contentLabel.Font = Enum.Font.GothamBold -- optional: bolder font
+        end
+    end
+end)
+
 
 -- Dropdown for dungeon difficulty
 Options.DungeonDifficulty = Tabs.Joiner:AddDropdown("DungeonDifficulty", {
