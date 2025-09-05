@@ -416,56 +416,6 @@ end)
 
 -- Joiner
 
--- Dropdown (Chapter selector)
-Options.GateRaidChapter = Tabs.Joiner:AddDropdown("GateRaidChapter", {
-    Title = "Select Gate Raid Chapter",
-    Values = {"TheGatedCity_Chapter1", "TheGatedCity_Chapter2", "TheGatedCity_Chapter3", "TheGatedCity_Chapter4"},
-    Multi = false,
-    Default = "TheGatedCity_Chapter1",
-    Callback = function(value)
-        -- Stores the chapter
-    end
-})
-
--- Toggle (Auto Join Gate Raid)
-Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
-    Title = "Auto Join Gate Raid",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            task.spawn(function()
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local Remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
-
-                -- Only run if workspace.Lobby exists
-                if workspace:FindFirstChild("Lobby") then
-
-                    -- Step 1: Create
-                    Remote:FireServer("Create")
-
-                    -- Step 2: Change Mode
-                    Remote:FireServer("Change-Mode", {["Mode"] = "Raids Stage"})
-
-                    -- Step 3: Change World
-                    Remote:FireServer("Change-World", {["World"] = "TheGatedCity"})
-
-                    -- Step 4: Change Chapter (from dropdown)
-                    Remote:FireServer("Change-Chapter", {["Chapter"] = Options.GateRaidChapter.Value})
-
-                    -- Step 5: Submit
-                    Remote:FireServer("Submit")
-
-                    -- Step 6: Start
-                    Remote:FireServer("Start")
-                else
-                    warn("[AutoJoinGateRaid] No workspace.Lobby found, skipping...")
-                end
-            end)
-        end
-    end
-})
-
-
 Tabs.Joiner:AddParagraph({
     Title = "- Dungeon -",
     Content = ""
