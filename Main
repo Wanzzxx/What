@@ -394,6 +394,28 @@ do
     end)
 end
 
+-- Claim Quest
+Options.AutoClaimQuest = Tabs.Misc:AddToggle("AutoClaimQuest", {
+    Title   = "Auto Claim All Quest",
+    Default = false
+})
+
+Options.AutoClaimQuest:OnChanged(function(state)
+    if not state then return end
+
+    task.spawn(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local questRemote = RS.Remote.Server.Gameplay.QuestEvent
+
+        while Options.AutoClaimQuest.Value and not Fluent.Unloaded do
+            questRemote:FireServer({ [1] = "ClaimAll" })
+            task.wait(20)                                   -- loop delay
+        end
+    end)
+end)
+
+-- Joiner
+
 Tabs.Joiner:AddParagraph({
     Title = "- Dungeon -",
     Content = ""
@@ -667,28 +689,8 @@ Options.AutoBuyToggle:OnChanged(function(enabled)
     end
 end)
 
--- Claim Quest
-Options.AutoClaimQuest = Tabs.Misc:AddToggle("AutoClaimQuest", {
-    Title   = "Auto Claim All Quest",
-    Default = false
-})
-
-Options.AutoClaimQuest:OnChanged(function(state)
-    if not state then return end
-
-    task.spawn(function()
-        local RS = game:GetService("ReplicatedStorage")
-        local questRemote = RS.Remote.Server.Gameplay.QuestEvent
-
-        while Options.AutoClaimQuest.Value and not Fluent.Unloaded do
-            questRemote:FireServer({ [1] = "ClaimAll" })
-            task.wait(20)                                   -- loop delay
-        end
-    end)
-end)
-
 Tabs.Shop:AddParagraph({
-    Title = "- Raid Shop (SBR) -",
+    Title = "- Raid Shop -",
     Content = ""
 })
 
@@ -749,6 +751,88 @@ Options.AutoBuyRaidShop:OnChanged(function(enabled)
     else
         Fluent:Notify({
             Title = "Raid Shop Auto Buy",
+            Content = "Auto-buy stopped.",
+            Duration = 3
+        })
+    end
+end)
+
+-- Graveyard Raid Shop Items
+local GraveyardItems = {
+    "Trait Reroll",
+    "Stats Key",
+    "Perfect Stats Key",
+    "All-In Toast",
+    "Cursed Finger"
+}
+
+local selectedGraveyardItems = {}
+
+-- Multi Dropdown
+local GraveyardDropdown = Tabs.Shop:AddDropdown("GraveyardRaidShopItems", {
+    Title = "Auto Buy [Graveyard Raid Shop]",
+    Description = "Select Wanted Items",
+    Values = GraveyardItems,
+    Multi = true,
+    Default = {},
+})
+
+GraveyardDropdown:OnChanged(function(Value)
+    selectedGraveyardItems = Value -- Store selected items
+    local chosen = {}
+    for item, state in pairs(Value) do
+        if state then
+            table.insert(chosen, item)
+        end
+    end
+    if #chosen > 0 then
+        Fluent:Notify({
+            Title = "Auto Buy [Graveyard Raid Shop]",
+            Content = "Selected: " .. table.concat(chosen, ", "),
+            Duration = 4
+        })
+    end
+end)
+
+-- Toggle for Auto Buy
+Options.AutoBuyGraveyard = Tabs.Shop:AddToggle("AutoBuyGraveyard", {
+    Title = "Buy Items (Graveyard)",
+    Default = false,
+})
+
+Options.AutoBuyGraveyard:OnChanged(function(enabled)
+    if enabled then
+        Fluent:Notify({
+            Title = "Graveyard Raid Shop",
+            Content = "Auto-buy started for selected items.",
+            Duration = 4
+        })
+
+        task.spawn(function()
+            while Options.AutoBuyGraveyard.Value and not Fluent.Unloaded do
+                for itemName, isSelected in pairs(selectedGraveyardItems) do
+                    if isSelected then
+                        local success, err = pcall(function()
+                            local args = { [1] = itemName, [2] = 1 }
+                            game:GetService("ReplicatedStorage")
+                                :WaitForChild("Remote")
+                                :WaitForChild("Server")
+                                :WaitForChild("Gameplay")
+                                :WaitForChild("RaidCSW_Shop")
+                                :FireServer(unpack(args))
+                        end)
+                        if not success then
+                            warn("[AutoBuy Graveyard] Failed to buy:", itemName, err)
+                        end
+                        task.wait(0.2)
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    else
+        Fluent:Notify({
+            Title = "Graveyard Raid Shop",
             Content = "Auto-buy stopped.",
             Duration = 3
         })
