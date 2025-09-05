@@ -395,7 +395,7 @@ do
 end
 
 Tabs.Joiner:AddParagraph({
-    Title = "Dungeon",
+    Title = "- Dungeon -",
     Content = ""
 })
 
@@ -446,7 +446,7 @@ Options.AutoJoinDungeon:OnChanged(function(enabled)
 end)
 
 Tabs.Joiner:AddParagraph({
-    Title = "Event",
+    Title = "- Event -",
     Content = ""
 })
 
@@ -487,7 +487,7 @@ Options.AutoJoinFallEvent:OnChanged(function(enabled)
 end)
 
 Tabs.Joiner:AddParagraph({
-    Title = "Others",
+    Title = "- Others -",
     Content = ""
 })
 
@@ -576,11 +576,17 @@ end)
 
 -- Merchant
 
+Tabs.Shop:AddParagraph({
+    Title = "- Merchant -",
+    Content = ""
+})
+
 local buyLoop
 
 local itemList = {
     ["Perfect Stats Key"] = "Perfect Stats Key",
     ["Stats Key"] = "Stats Key",
+    ["Soul Fragments"] = "Soul Fragments",
     ["Trait Reroll"] = "Trait Reroll",
     ["Dr. Megga Punk"] = "Dr. Megga Punk",
     ["Cursed Finger"] = "Cursed Finger",
@@ -681,6 +687,11 @@ Options.AutoClaimQuest:OnChanged(function(state)
     end)
 end)
 
+Tabs.Shop:AddParagraph({
+    Title = "- Raid Shop (SBR) -",
+    Content = ""
+})
+
 local RaidShopItems = {
     "Trait Reroll",
     "Stats Key",
@@ -747,7 +758,7 @@ end)
 -- Vote Toggles
 
 Tabs.Main:AddParagraph({
-    Title = "- 𝗩𝗼𝘁𝗲 𝗠𝗲𝗻𝘂 -",
+    Title = "- Vote Menu -",
     Content = ""
 })
 
