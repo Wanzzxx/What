@@ -419,9 +419,14 @@ end)
 -- Dropdown (Chapter selector)
 Options.GateRaidChapter = Tabs.Joiner:AddDropdown("GateRaidChapter", {
     Title = "Select Gate Raid Chapter",
-    Values = {"TheGatedCity_Chapter1", "TheGatedCity_Chapter2", "TheGatedCity_Chapter3", "TheGatedCity_Chapter4"},
+    Values = {
+        "TheGatedCity_Chapter1",
+        "TheGatedCity_Chapter2",
+        "TheGatedCity_Chapter3",
+        "TheGatedCity_Chapter4"
+    },
     Multi = false,
-    Default = "TheGatedCity_Chapter1",
+    Default = "TheGatedCity_Chapter1"
 })
 
 -- Toggle (Auto Join Gate Raid)
@@ -435,7 +440,11 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
             while Options.AutoJoinGateRaid.Value and not Fluent.Unloaded do
                 if workspace:FindFirstChild("Lobby") then
                     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                    local Remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
+                    local Remote = ReplicatedStorage
+                        :WaitForChild("Remote")
+                        :WaitForChild("Server")
+                        :WaitForChild("PlayRoom")
+                        :WaitForChild("Event")
 
                     -- Step 1: Create
                     Remote:FireServer("Create")
@@ -444,17 +453,24 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
                     -- Step 3: Change World
                     Remote:FireServer("Change-World", {["World"] = "TheGatedCity"})
                     -- Step 4: Change Chapter (from dropdown)
-                    Remote:FireServer("Change-Chapter", {["Chapter"] = Options.GateRaidChapter:GetValue()})
+                    local chapter = Options.GateRaidChapter.Value or "TheGatedCity_Chapter1"
+                    Remote:FireServer("Change-Chapter", {["Chapter"] = chapter})
                     -- Step 5: Submit
                     Remote:FireServer("Submit")
                     -- Step 6: Start
                     Remote:FireServer("Start")
 
-                    break -- only do once
+                    Fluent:Notify({
+                        Title = "Auto Join Gate Raid",
+                        Content = "Joined " .. chapter,
+                        Duration = 4
+                    })
+
+                    break -- stop after success
                 else
-                    warn("[AutoJoinGateRaid] No workspace.Lobby found, retrying...")
+                    warn("[AutoJoinGateRaid] Lobby not found, retrying...")
                 end
-                task.wait(2) -- retry every 2s
+                task.wait(2) -- retry every 2s until lobby exists
             end
         end)
     end
