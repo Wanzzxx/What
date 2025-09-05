@@ -428,7 +428,7 @@ Options.GateRaidChapter = Tabs.Joiner:AddDropdown("GateRaidChapter", {
     Multi = false,
     Default = "TheGatedCity_Chapter1",
     Callback = function(value)
-        -- Just stores the chapter, toggle will use this
+        -- Stores the chapter
     end
 })
 
@@ -442,28 +442,18 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
                 local ReplicatedStorage = game:GetService("ReplicatedStorage")
                 local Remote = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event")
 
-                -- Check if lobby exists
-                local LobbyService = ReplicatedStorage:WaitForChild("Remote"):WaitForChild("Client"):WaitForChild("PlayRoom"):WaitForChild("Data")
-                local hasLobby = false
+                -- Detect lobby folder
+                local LobbyFolder = ReplicatedStorage:FindFirstChild("PlayRoom") or workspace:FindFirstChild("PlayRoom")
+                local hasLobby = LobbyFolder and #LobbyFolder:GetChildren() > 0
 
-                for _, lobby in ipairs(LobbyService:GetChildren()) do
-                    if lobby:IsA("Folder") then
-                        hasLobby = true
-                        break
-                    end
-                end
-
-                if not hasLobby then
-                    -- Step 1: Create
-                    Remote:FireServer("Create")
-
+                if hasLobby then
                     -- Step 2: Change Mode
                     Remote:FireServer("Change-Mode", {["Mode"] = "Raids Stage"})
 
                     -- Step 3: Change World
                     Remote:FireServer("Change-World", {["World"] = "TheGatedCity"})
 
-                    -- Step 4: Change Chapter (from dropdown)
+                    -- Step 4: Change Chapter
                     Remote:FireServer("Change-Chapter", {["Chapter"] = Options.GateRaidChapter.Value})
 
                     -- Step 5: Submit
@@ -472,12 +462,13 @@ Options.AutoJoinGateRaid = Tabs.Joiner:AddToggle("AutoJoinGateRaid", {
                     -- Step 6: Start
                     Remote:FireServer("Start")
                 else
-                    warn("[AutoJoinGateRaid] Lobby already exists, skipping...")
+                    warn("[AutoJoinGateRaid] No lobby found, skipping...")
                 end
             end)
         end
     end
 })
+
 
 Tabs.Joiner:AddParagraph({
     Title = "- Dungeon -",
