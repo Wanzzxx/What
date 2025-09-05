@@ -416,6 +416,11 @@ end)
 
 -- Joiner
 
+Tabs.Joiner:AddParagraph({
+    Title = "- Raid -",
+    Content = ""
+})
+
 -- Dropdown (Chapter selector)
 Options.GateRaidChapter = Tabs.Joiner:AddDropdown("GateRaidChapter", {
     Title = "Select Gate Raid Chapter",
@@ -856,7 +861,7 @@ end)
 
 -- Toggle for Auto Buy
 Options.AutoBuyGraveyard = Tabs.Shop:AddToggle("AutoBuyGraveyard", {
-    Title = "Buy Items (Graveyard)",
+    Title = "Buy Items",
     Default = false,
 })
 
