@@ -310,7 +310,7 @@ local loopActive = true
 Options.GameSpeed = Tabs.Main:AddDropdown("GameSpeed", {
     Title = "Change Game Speed",
     Values = {"1", "2", "3"},
-    Default = "1"
+    Default = "2"
 })
 
 -- Loop
