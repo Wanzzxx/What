@@ -336,10 +336,13 @@ Options.GameSpeed:OnChanged(function(speedValue)
     end
 end)
 
--- No Lag
+-- No lag
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
+-- bruh
 Options.AntiLag = Tabs.Main:AddToggle("AntiLag", {
     Title = "Anti-Lag (Low Quality Mode)",
     Default = false,
@@ -347,19 +350,14 @@ Options.AntiLag = Tabs.Main:AddToggle("AntiLag", {
 
 -- Helper: Clean objects (textures + lighting only)
 local function cleanObject(obj)
-    -- Remove Textures
     if obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance") then
         obj:Destroy()
     end
-
-    -- Clear Mesh Textures
     if obj:IsA("MeshPart") then
         obj.TextureID = ""
     elseif obj:IsA("SpecialMesh") then
         obj.TextureId = ""
     end
-
-    -- Remove Lighting Effects
     if obj:IsA("Sky") or obj:IsA("Atmosphere") or obj:IsA("BloomEffect") 
         or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect")
         or obj:IsA("SunRaysEffect") or obj:IsA("DepthOfFieldEffect") then
@@ -375,10 +373,21 @@ local function resetLighting()
     Lighting.FogStart = 0
 end
 
--- ✅ Your Agent destroyer (kept as-is)
+-- ✅ Your Agent destroyer
 local function safeDestroy(obj)
     if obj and obj:IsA("Model") then
         pcall(function() obj:Destroy() end)
+    end
+end
+
+-- ✅ Remove other players (only in Lobby)
+local function removeOtherPlayers()
+    if Workspace:FindFirstChild("Lobby") then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                player.Character:Destroy()
+            end
+        end
     end
 end
 
@@ -398,17 +407,40 @@ Options.AntiLag:OnChanged(function(enabled)
             local agentFolder = Workspace:FindFirstChild("Agent")
             if agentFolder and agentFolder:FindFirstChild("Agent") then
                 agentFolder = agentFolder.Agent
-
-                -- Clean existing
                 for _, obj in ipairs(agentFolder:GetDescendants()) do
                     safeDestroy(obj)
                 end
-
-                -- Clean new
                 agentFolder.DescendantAdded:Connect(function(desc)
                     safeDestroy(desc)
                 end)
             end
+        else
+            -- 🔹 In Lobby → Remove all other players
+            removeOtherPlayers()
+
+            -- Watch for new spawns
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    player.CharacterAdded:Connect(function(char)
+                        task.wait(0.1)
+                        if Options.AntiLag.Value and Workspace:FindFirstChild("Lobby") then
+                            char:Destroy()
+                        end
+                    end)
+                end
+            end
+
+            -- Watch for new players
+            Players.PlayerAdded:Connect(function(player)
+                if player ~= LocalPlayer then
+                    player.CharacterAdded:Connect(function(char)
+                        task.wait(0.1)
+                        if Options.AntiLag.Value and Workspace:FindFirstChild("Lobby") then
+                            char:Destroy()
+                        end
+                    end)
+                end
+            end)
         end
     end
 end)
