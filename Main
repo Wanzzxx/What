@@ -1,4 +1,22 @@
 if game.PlaceId ~= 72829404259339 then return end
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local ContentProvider = game:GetService("ContentProvider")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local assetsToLoad = {
+    Players.LocalPlayer:WaitForChild("PlayerGui"),
+    ReplicatedStorage
+}
+
+pcall(function()
+    ContentProvider:PreloadAsync(assetsToLoad)
+end)
+
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
