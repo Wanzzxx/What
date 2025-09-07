@@ -1207,7 +1207,7 @@ task.spawn(function()
     local SoundService = game:GetService("SoundService")
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://130735042055734"
-    sound.Volume = 3
+    sound.Volume = 2
     sound.Looped = false
     sound.Parent = SoundService
     sound:Play()
