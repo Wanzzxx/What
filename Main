@@ -450,6 +450,52 @@ Options.AntiLag:OnChanged(function(enabled)
     end
 end)
 
+Options.AutoRejoinFreeze = Tabs.Misc:AddToggle("AutoRejoinFreeze", {
+    Title = "Auto Rejoin When Game Freeze",
+    Default = false,
+    Callback = function(state)
+        if state then
+            local Players = game:GetService("Players")
+            local TeleportService = game:GetService("TeleportService")
+            local RunService = game:GetService("RunService")
+
+            local player = Players.LocalPlayer
+            local placeId = game.PlaceId
+            local jobId = game.JobId
+
+            local agentFolder = workspace:WaitForChild("Agent"):WaitForChild("Agent")
+            local enemyFolder = workspace:WaitForChild("Agent"):WaitForChild("EnemyT")
+
+            local emptyStart = nil
+
+            Options._RejoinConn = RunService.Heartbeat:Connect(function()
+                -- Only run if no Lobby exists
+                if workspace:FindFirstChild("Lobby") then
+                    emptyStart = nil
+                    return
+                end
+
+                local hasChildren = (#agentFolder:GetChildren() > 0) or (#enemyFolder:GetChildren() > 0)
+
+                if hasChildren then
+                    emptyStart = nil
+                else
+                    if not emptyStart then
+                        emptyStart = tick()
+                    elseif tick() - emptyStart >= 300 then -- 5 minutes
+                        TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+                    end
+                end
+            end)
+        else
+            if Options._RejoinConn then
+                Options._RejoinConn:Disconnect()
+                Options._RejoinConn = nil
+            end
+        end
+    end
+})
+
 Options.PingFreezeRejoin = Tabs.Misc:AddToggle("PingFreezeRejoin", {
     Title = "Auto Rejoin When Ping Freeze/Stuck",
     Default = false
