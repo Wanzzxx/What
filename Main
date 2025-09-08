@@ -1326,6 +1326,27 @@ Options.AutoStart:OnChanged(function(state)
     end)
 end)
 
+-- Unlock Auto Trait Reroll
+Options.UnlockAutoTrait = Tabs.Roll:AddToggle("UnlockAutoTrait", {
+    Title = "Unlock Auto Trait Reroll Gamepass",
+    Default = false,
+    Callback = function(Value)
+        local player = game:GetService("Players").LocalPlayer
+        local replicatedStorage = game:GetService("ReplicatedStorage")
+        local playerData = replicatedStorage:FindFirstChild("Player_Data")
+        
+        if playerData then
+            local myData = playerData:FindFirstChild(player.Name)
+            if myData and myData:FindFirstChild("Gamepass") then
+                local autoTrait = myData.Gamepass:FindFirstChild("Auto Trait Reroll")
+                if autoTrait then
+                    autoTrait.Value = Value
+                end
+            end
+        end
+    end
+})
+
 -- Play sound on script execution
 task.spawn(function()
     local SoundService = game:GetService("SoundService")
