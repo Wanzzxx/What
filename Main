@@ -220,7 +220,6 @@ local function getPlayerItemAmount(name)
     return 0
 end
 
---// Send Webhook (Styled - No Macro)
 local function sendWebhook(results, timeTaken)
     if not Options.ActiveWebhook.Value then return end
     local url = Options.WebhookURL.Value
@@ -240,7 +239,7 @@ local function sendWebhook(results, timeTaken)
         embeds = {{
             title = "Anime Rangers X",
             fields = {
-                { name = "Name", value = string.format("[%d] %s", LocalPlayer:FindFirstChild("Level") and LocalPlayer.Level.Value or 0, LocalPlayer.Name), inline = false },
+                { name = "Name", value = LocalPlayer.Name, inline = false },
                 { name = "Result", value = content, inline = false },
             }
         }}
