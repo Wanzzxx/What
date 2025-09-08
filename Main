@@ -316,7 +316,7 @@ local function showGameResults()
         Fluent:Notify({ Title = "Results Notify", Content = resultText .. "\nTime Taken: " .. timeTaken, Duration = 8 })
 
         -- Send to webhook also
-        sendWebhook(resultText .. "\nTime Taken: " .. timeTaken)
+        sendWebhook(results, timeTaken)
 
         -- 🔄 Reset timer for next game
         gameStartTick = tick()
