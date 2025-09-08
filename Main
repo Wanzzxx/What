@@ -256,9 +256,6 @@ local function sendWebhook(results, timeTaken)
     end
 end
 
--- Track game start time
-local gameStartTick = tick()
-
 --// Game Result Handler
 local lastNotify = 0
 local function showGameResults()
@@ -279,6 +276,7 @@ local function showGameResults()
             return
         end
 
+        -- Wait a bit for children to populate
         task.wait(1)
 
         local children = rw:GetChildren()
@@ -295,28 +293,9 @@ local function showGameResults()
             table.insert(lines, ("[ %dx ] %s  [Now: %dx]"):format(amount, rewardName, nowAmount))
         end
 
-        -- Calculate elapsed time
-        local elapsed = math.floor(tick() - gameStartTick)
-        local minutes = math.floor(elapsed / 60)
-        local seconds = elapsed % 60
-        local timeTaken
-        if minutes > 59 then
-            local hours = math.floor(minutes / 60)
-            minutes = minutes % 60
-            timeTaken = string.format("%d:%02d:%02d", hours, minutes, seconds)
-        else
-            timeTaken = string.format("%d:%02d", minutes, seconds)
-        end
-
-        -- Add into notify
         local resultText = table.concat(lines, "\n")
-        Fluent:Notify({ Title = "Results Notify", Content = resultText .. "\nTime Taken: " .. timeTaken, Duration = 8 })
-
-        -- Send to webhook also
-        sendWebhook(results, timeTaken)
-
-        -- 🔄 Reset timer for next game
-        gameStartTick = tick()
+        Fluent:Notify({ Title = "Results Notify", Content = resultText, Duration = 6 })
+        sendWebhook(resultText)
     end)
 end
 
