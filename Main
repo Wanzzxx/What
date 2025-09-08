@@ -122,6 +122,7 @@ end)
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Menu", Icon = "home" }),
+    Roll = Window:AddTab({ Title = "Roll", Icon = "layers" }),
     Joiner = Window:AddTab({ Title = "Auto Join", Icon = "users" }),
     Shop = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" }),
     Webhook = Window:AddTab({ Title = "Webhook", Icon = "globe" }),
