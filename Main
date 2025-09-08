@@ -237,7 +237,7 @@ local function sendWebhook(results, timeTaken)
     local data = {
         username = "W-Hook",
         embeds = {{
-            title = "Anime Rangers X",
+            title = placeName,
             fields = {
                 { name = "Name", value = LocalPlayer.Name, inline = false },
                 { name = "Result", value = content, inline = false },
