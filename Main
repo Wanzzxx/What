@@ -556,6 +556,25 @@ do
     end)
 end
 
+-- Assuming you already have your Options table and Misc tab
+Options.AutoRejoin2Hours = Tabs.Misc:AddToggle({
+    Name = "Auto Rejoin After 2 Hours",
+    Default = false,
+    Callback = function(value)
+        if value then
+            spawn(function()
+                -- Wait for 2 hours
+                task.wait(2 * 60 * 60)
+                
+                -- Rejoin the game
+                local player = game:GetService("Players").LocalPlayer
+                local placeId = game.PlaceId
+                game:GetService("TeleportService"):Teleport(placeId, player)
+            end)
+        end
+    end
+})
+
 -- Toggle: Blackout Screen
 Options.BlackoutScreen = Tabs.Misc:AddToggle("BlackoutScreen", {
     Title = "Full Black Background",
