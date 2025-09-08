@@ -220,27 +220,24 @@ local function getPlayerItemAmount(name)
     return 0
 end
 
+--// Send Webhook (Original Backup)
 local function sendWebhook(results, timeTaken)
     if not Options.ActiveWebhook.Value then return end
     local url = Options.WebhookURL.Value
     if url == "" then return end
 
     local placeName = MarketplaceService:GetProductInfo(game.PlaceId).Name
-    local contentLines = {
-        ("%s - Finished"):format(placeName),
-        ("- Time: %s"):format(timeTaken),
-        "- Reward:",
-        results
-    }
-    local content = table.concat(contentLines, "\n")
-
     local data = {
-        username = "W-Hook",
+        username = "WanzHook",
         embeds = {{
-            title = placeName,
+            title = "Results:",
             fields = {
-                { name = "Name", value = LocalPlayer.Name, inline = false },
-                { name = "Result", value = content, inline = false },
+                { name = "Username", value = LocalPlayer.Name, inline = true },
+                { name = "UserID", value = tostring(LocalPlayer.UserId), inline = true },
+                { name = "Place", value = placeName, inline = false },
+                { name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = false },
+                { name = "Rewards", value = results, inline = false },
+                { name = "Time Taken", value = timeTaken, inline = false }
             }
         }}
     }
