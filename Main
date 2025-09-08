@@ -220,7 +220,7 @@ local function getPlayerItemAmount(name)
     return 0
 end
 
---// Send Webhook (Original Backup)
+--// Send Webhook
 local function sendWebhook(results, timeTaken)
     if not Options.ActiveWebhook.Value then return end
     local url = Options.WebhookURL.Value
@@ -237,7 +237,7 @@ local function sendWebhook(results, timeTaken)
                 { name = "Place", value = placeName, inline = false },
                 { name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = false },
                 { name = "Rewards", value = results, inline = false },
-                { name = "Time Taken", value = timeTaken, inline = false }
+                { name = "Time Taken", value = timeTaken, inline = false } -- ✅ New field
             }
         }}
     }
