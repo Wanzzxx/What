@@ -741,6 +741,85 @@ Options.AutoJoinDungeon:OnChanged(function(enabled)
 end)
 
 Tabs.Joiner:AddParagraph({
+    Title = "- Adventure -",
+    Content = ""
+})
+
+-- Joiner Tab
+Options.NextGame = Tabs.Joiner:AddDropdown("NextGame", {
+    Title = "Select Next Game:",
+    Values = {"Endure", "Evade"},
+    Multi = false,
+    Default = "Endure",
+    Callback = function(value)
+        -- Always loop on chosen value
+        task.spawn(function()
+            while task.wait(1) do
+                if workspace:FindFirstChild("Lobby") then
+                    -- Do nothing here, handled by Auto Join Adventure
+                else
+                    local player = game:GetService("Players").LocalPlayer
+                    local VIM = game:GetService("VirtualInputManager")
+                    local GuiService = game:GetService("GuiService")
+
+                    local function pressKey(keycode)
+                        VIM:SendKeyEvent(true, keycode, false, game)
+                        task.wait(0.1)
+                        VIM:SendKeyEvent(false, keycode, false, game)
+                    end
+
+                    local prompt = player.PlayerGui:FindFirstChild("AdventureContinuePrompt")
+                    if prompt and prompt:FindFirstChild("Main") then
+                        local btn = prompt.Main.LeftSide.Button:FindFirstChild(value)
+                        if btn then
+                            GuiService.SelectedObject = btn
+                            pressKey(Enum.KeyCode.Return)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+})
+
+Options.AutoJoinAdventure = Tabs.Joiner:AddToggle("AutoJoinAdventure", {
+    Title = "Auto Join Adventure",
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while Options.AutoJoinAdventure.Value do
+                    task.wait(3)
+                    if workspace:FindFirstChild("Lobby") then
+                        -- Step 1
+                        local args = {"AdventureMode"}
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Remote"):WaitForChild("Server")
+                            :WaitForChild("PlayRoom"):WaitForChild("Event")
+                            :FireServer(unpack(args))
+
+                        task.wait(1)
+
+                        -- Step 2
+                        local args1 = {"Start"}
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Remote"):WaitForChild("Server")
+                            :WaitForChild("PlayRoom"):WaitForChild("Event")
+                            :FireServer(unpack(args1))
+
+                        local args2 = {"AdventureMode"}
+                        game:GetService("ReplicatedStorage")
+                            :WaitForChild("Remote"):WaitForChild("Server")
+                            :WaitForChild("PlayRoom"):WaitForChild("Event")
+                            :FireServer(unpack(args2))
+                    end
+                end
+            end)
+        end
+    end
+})
+
+Tabs.Joiner:AddParagraph({
     Title = "- Event -",
     Content = ""
 })
