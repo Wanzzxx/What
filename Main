@@ -1,1 +1,1 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Wanzzxx/Script/refs/heads/main/ArX"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Wanzzxx/Script/refs/heads/main/AnimeRX.lua"))()
